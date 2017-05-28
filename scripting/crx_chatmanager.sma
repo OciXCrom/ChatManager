@@ -3,7 +3,7 @@
 #include <cromchat>
 #include <cstrike>
 
-#define PLUGIN_VERSION "3.1"
+#define PLUGIN_VERSION "3.2"
 #define DELAY_ON_CONNECT 1.0
 #define DELAY_ON_CHANGE 0.1
 #define MAX_ARG_SIZE 20
@@ -38,6 +38,7 @@ enum _:Args
 	ARG_NAME[MAX_ARG_SIZE],
 	ARG_IP[MAX_ARG_SIZE],
 	ARG_STEAM[MAX_ARG_SIZE],
+	ARG_USERID[MAX_ARG_SIZE],
 	ARG_CHAT_COLOR[MAX_ARG_SIZE],
 	ARG_MESSAGE[MAX_ARG_SIZE],
 	ARG_TIME[MAX_ARG_SIZE]
@@ -49,12 +50,13 @@ enum _:PlayerData
 	PDATA_NAME_LOWER[32],
 	PDATA_IP[16],
 	PDATA_STEAM[35],
+	PDATA_USERID[10],
 	PDATA_PREFIX[32],
 	PDATA_CHAT_COLOR[6],
 	bool:PDATA_ADMIN_LISTEN
 }
 
-new const g_eArgs[Args] = { "%admin_prefix%", "%dead_prefix%", "%team%", "%name%", "%ip%", "%steam%", "%chat_color%", "%message%", "%time%" }
+new const g_eArgs[Args] = { "%admin_prefix%", "%dead_prefix%", "%team%", "%name%", "%ip%", "%steam%", "%userid%", "%chat_color%", "%message%", "%time%" }
 
 new g_eSettings[Settings],
 	g_ePlayerData[33][PlayerData],
@@ -105,6 +107,7 @@ public client_putinserver(id)
 	strtolower(g_ePlayerData[id][PDATA_NAME_LOWER])
 	get_user_ip(id, g_ePlayerData[id][PDATA_IP], charsmax(g_ePlayerData[][PDATA_IP]), 1)
 	get_user_authid(id, g_ePlayerData[id][PDATA_STEAM], charsmax(g_ePlayerData[][PDATA_STEAM]))
+	num_to_str(get_user_userid(id), g_ePlayerData[id][PDATA_USERID], charsmax(g_ePlayerData[][PDATA_USERID]))
 	set_task(DELAY_ON_CONNECT, "UpdateData", id)
 }
 	
@@ -329,6 +332,7 @@ format_chat_message(const bool:bTeam, const id, const iAlive, const CsTeams:iTea
 	replace_all(szMessage, iLen, g_eArgs[ARG_NAME], g_ePlayerData[id][PDATA_NAME])
 	replace_all(szMessage, iLen, g_eArgs[ARG_IP], g_ePlayerData[id][PDATA_IP])
 	replace_all(szMessage, iLen, g_eArgs[ARG_STEAM], g_ePlayerData[id][PDATA_STEAM])
+	replace_all(szMessage, iLen, g_eArgs[ARG_USERID], g_ePlayerData[id][PDATA_USERID])
 	replace_all(szMessage, iLen, g_eArgs[ARG_CHAT_COLOR], g_ePlayerData[id][PDATA_CHAT_COLOR])
 	replace_all(szMessage, iLen, g_eArgs[ARG_MESSAGE], szArgs)	
 	replace_all(szMessage, iLen, g_eArgs[ARG_TIME], get_timestring())
