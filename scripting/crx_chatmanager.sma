@@ -116,7 +116,7 @@ public client_infochanged(id)
 	if(!is_user_connected(id))
 		return
 		
-	new szNewName[32]
+	static szNewName[32]
 	get_user_info(id, "name", szNewName, charsmax(szNewName))
 	
 	if(!equal(szNewName, g_ePlayerData[id][PDATA_NAME]))
