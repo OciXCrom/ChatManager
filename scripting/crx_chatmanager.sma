@@ -3,7 +3,7 @@
 #include <cromchat>
 #include <cstrike>
 
-#define PLUGIN_VERSION "3.2"
+#define PLUGIN_VERSION "3.2b"
 #define DELAY_ON_CONNECT 1.0
 #define DELAY_ON_CHANGE 0.1
 #define MAX_ARG_SIZE 20
@@ -192,7 +192,7 @@ public Hook_Say(id)
 	{
 		iPlayer = iPlayers[i]
 		
-		if(g_ePlayerData[iPlayer][PDATA_ADMIN_LISTEN] || iAlive == is_user_alive(iPlayer) || (bTeam && iTeam == cs_get_user_team(iPlayer)))
+		if(g_ePlayerData[iPlayer][PDATA_ADMIN_LISTEN] || (bTeam && iTeam == cs_get_user_team(iPlayer) && iAlive == is_user_alive(iPlayer)) || (!bTeam && iAlive == is_user_alive(iPlayer)))
 			CC_SendMatched(iPlayer, id, szMessage)
 	}
 	
