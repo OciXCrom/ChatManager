@@ -3,7 +3,7 @@
 #include <cromchat>
 #include <cstrike>
 
-#define PLUGIN_VERSION "3.2b"
+#define PLUGIN_VERSION "3.3"
 #define DELAY_ON_CONNECT 1.0
 #define DELAY_ON_CHANGE 0.1
 #define MAX_ARG_SIZE 20
@@ -147,7 +147,7 @@ public UpdateData(id)
 	}
 	
 	if(g_eSettings[ADMIN_LISTEN_FLAGS][0])
-		g_ePlayerData[id][PDATA_ADMIN_LISTEN] = bool:has_all_flags(id, g_eSettings[ADMIN_LISTEN_FLAGS])
+		g_ePlayerData[id][PDATA_ADMIN_LISTEN] = (equal(g_eSettings[ADMIN_LISTEN_FLAGS], "#all") || bool:has_all_flags(id, g_eSettings[ADMIN_LISTEN_FLAGS]))
 		
 	g_ePlayerData[id][PDATA_PREFIX][0] = EOS
 		
