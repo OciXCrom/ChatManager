@@ -3,7 +3,7 @@
 #include <cromchat>
 #include <cstrike>
 
-#define PLUGIN_VERSION "3.3"
+#define PLUGIN_VERSION "3.4"
 #define DELAY_ON_CONNECT 1.0
 #define DELAY_ON_CHANGE 0.1
 #define MAX_ARG_SIZE 20
@@ -27,7 +27,8 @@ enum _:Settings
 	TEAM_PREFIX_SPEC[32],
 	FORMAT_TIME[64],
 	FORMAT_SAY[128],
-	FORMAT_SAY_TEAM[128]
+	FORMAT_SAY_TEAM[128],
+	bool:ALL_CHAT
 }
 
 enum _:Args
@@ -147,7 +148,7 @@ public UpdateData(id)
 	}
 	
 	if(g_eSettings[ADMIN_LISTEN_FLAGS][0])
-		g_ePlayerData[id][PDATA_ADMIN_LISTEN] = (equal(g_eSettings[ADMIN_LISTEN_FLAGS], "#all") || bool:has_all_flags(id, g_eSettings[ADMIN_LISTEN_FLAGS]))
+		g_ePlayerData[id][PDATA_ADMIN_LISTEN] = bool:has_all_flags(id, g_eSettings[ADMIN_LISTEN_FLAGS])
 		
 	g_ePlayerData[id][PDATA_PREFIX][0] = EOS
 		
@@ -192,7 +193,7 @@ public Hook_Say(id)
 	{
 		iPlayer = iPlayers[i]
 		
-		if(g_ePlayerData[iPlayer][PDATA_ADMIN_LISTEN] || (bTeam && iTeam == cs_get_user_team(iPlayer) && iAlive == is_user_alive(iPlayer)) || (!bTeam && iAlive == is_user_alive(iPlayer)))
+		if(g_ePlayerData[iPlayer][PDATA_ADMIN_LISTEN] || (bTeam && iTeam == cs_get_user_team(iPlayer) && iAlive == is_user_alive(iPlayer)) || (!bTeam && (g_eSettings[ALL_CHAT] || iAlive == is_user_alive(iPlayer))))
 			CC_SendMatched(iPlayer, id, szMessage)
 	}
 	
@@ -277,6 +278,8 @@ ReadFile()
 								copy(g_eSettings[FORMAT_SAY], charsmax(g_eSettings[FORMAT_SAY]), szValue)
 							else if(equal(szKey, "FORMAT_SAY_TEAM"))
 								copy(g_eSettings[FORMAT_SAY_TEAM], charsmax(g_eSettings[FORMAT_SAY_TEAM]), szValue)
+							else if(equal(szKey, "ALL_CHAT"))
+								g_eSettings[ALL_CHAT] = _:clamp(str_to_num(szValue), false, true)
 						}
 						case SECTION_ADMIN_PREFIXES:
 						{
