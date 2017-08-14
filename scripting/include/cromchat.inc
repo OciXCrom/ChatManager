@@ -158,7 +158,7 @@ stock CC_WriteMessage(const id, const szMessage[], szTeam[CC_MAX_TEAM_SIZE])
 
 	message_begin(MSG_ONE, CC_MSG_SAYTEXT, _, id)
 	write_byte(id)
-	write_string("%s")
+	//write_string("%s") -- Good Job, Valve!
 	write_string(szMessage)
 	message_end()
 	
