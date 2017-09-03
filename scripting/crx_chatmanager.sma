@@ -3,7 +3,7 @@
 #include <cromchat>
 #include <cstrike>
 
-#define PLUGIN_VERSION "3.4"
+#define PLUGIN_VERSION "3.5"
 #define DELAY_ON_CONNECT 1.0
 #define DELAY_ON_CHANGE 0.1
 #define MAX_ARG_SIZE 20
@@ -361,6 +361,7 @@ public plugin_natives()
 	register_native("cm_has_user_admin_listen", "_cm_has_user_admin_listen")
 	register_native("cm_total_chat_colors", "_cm_total_chat_colors")
 	register_native("cm_total_prefixes", "_cm_total_chat_colors")
+	register_native("cm_update_player_data", "_cm_update_player_data")
 }
 
 public _cm_get_admin_prefix(iPlugin, iParams)
@@ -406,3 +407,6 @@ public _cm_get_admin_listen_flags(iPlugin, iParams)
 	
 public bool:_cm_has_user_admin_listen(iPlugin, iParams)
 	return g_ePlayerData[get_param(1)][PDATA_ADMIN_LISTEN]
+	
+public _cm_update_player_data(iPlugin, iParams)
+	UpdateData(get_param(1))
