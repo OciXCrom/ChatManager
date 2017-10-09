@@ -3,10 +3,40 @@
 #include <cromchat>
 #include <cstrike>
 
-#define PLUGIN_VERSION "3.5"
+#define PLUGIN_VERSION "3.6"
 #define DELAY_ON_CONNECT 1.0
 #define DELAY_ON_CHANGE 0.1
-#define MAX_ARG_SIZE 20
+#define PLACEHOLDER_LENGTH 64
+
+/* 	You can comment placeholders you don't need from the lines below and that will completely deactivate them.
+	You can also activate the additional ones if you want to use them.
+	Feel free to experiment in making your custom ones as well. */
+	
+#define ARG_ADMIN_PREFIX 		"%admin_prefix%"
+#define ARG_DEAD_PREFIX 		"%dead_prefix%"
+#define ARG_TEAM 				"%team%"
+#define ARG_NAME 				"%name%"
+#define ARG_IP 					"%ip%"
+#define ARG_STEAM 				"%steam%"
+#define ARG_USERID 				"%userid%"
+#define ARG_CHAT_COLOR 			"%chat_color%"
+#define ARG_MESSAGE 			"%message%"
+#define ARG_TIME 				"%time%"
+//#define ARG_HEALTH 			"%health%"
+//#define ARG_ARMOR 			"%armor%"
+//#define ARG_FRAGS 			"%frags%"
+//#define ARG_DEATHS 			"%deaths%"
+//#define ARG_CITY 				"%city%"
+//#define ARG_COUNTRY 			"%country%"
+//#define ARG_COUNTRY_CODE 		"%country_code%"
+//#define ARG_CONTINENT 		"%continent%"
+//#define ARG_CONTINENT_CODE 	"%continent_code%"
+
+/*	The settings end here. Don't modify anything below this if you don't know what you're doing. */
+
+#if defined ARG_CITY || defined ARG_COUNTRY || defined ARG_COUNTRY_CODE || defined ARG_CONTINENT || defined ARG_CONTINENT_CODE
+	#include <geoip>
+#endif
 
 enum
 {
@@ -25,24 +55,11 @@ enum _:Settings
 	TEAM_PREFIX_T[32],
 	TEAM_PREFIX_CT[32],
 	TEAM_PREFIX_SPEC[32],
+	ERROR_TEXT[32],
 	FORMAT_TIME[64],
-	FORMAT_SAY[128],
-	FORMAT_SAY_TEAM[128],
+	FORMAT_SAY[160],
+	FORMAT_SAY_TEAM[160],
 	bool:ALL_CHAT
-}
-
-enum _:Args
-{
-	ARG_ADMIN_PREFIX[MAX_ARG_SIZE],
-	ARG_DEAD_PREFIX[MAX_ARG_SIZE],
-	ARG_TEAM[MAX_ARG_SIZE],
-	ARG_NAME[MAX_ARG_SIZE],
-	ARG_IP[MAX_ARG_SIZE],
-	ARG_STEAM[MAX_ARG_SIZE],
-	ARG_USERID[MAX_ARG_SIZE],
-	ARG_CHAT_COLOR[MAX_ARG_SIZE],
-	ARG_MESSAGE[MAX_ARG_SIZE],
-	ARG_TIME[MAX_ARG_SIZE]
 }
 
 enum _:PlayerData
@@ -56,8 +73,6 @@ enum _:PlayerData
 	PDATA_CHAT_COLOR[6],
 	bool:PDATA_ADMIN_LISTEN
 }
-
-new const g_eArgs[Args] = { "%admin_prefix%", "%dead_prefix%", "%team%", "%name%", "%ip%", "%steam%", "%userid%", "%chat_color%", "%message%", "%time%" }
 
 new g_eSettings[Settings],
 	g_ePlayerData[33][PlayerData],
@@ -272,6 +287,8 @@ ReadFile()
 								copy(g_eSettings[TEAM_PREFIX_CT], charsmax(g_eSettings[TEAM_PREFIX_CT]), szValue)
 							else if(equal(szKey, "TEAM_PREFIX_SPEC"))
 								copy(g_eSettings[TEAM_PREFIX_SPEC], charsmax(g_eSettings[TEAM_PREFIX_SPEC]), szValue)
+							else if(equal(szKey, "ERROR_TEXT"))
+								copy(g_eSettings[ERROR_TEXT], charsmax(g_eSettings[ERROR_TEXT]), szValue)
 							else if(equal(szKey, "FORMAT_TIME"))
 								copy(g_eSettings[FORMAT_TIME], charsmax(g_eSettings[FORMAT_TIME]), szValue)
 							else if(equal(szKey, "FORMAT_SAY"))
@@ -328,26 +345,143 @@ ReadFile()
 
 format_chat_message(const bool:bTeam, const id, const iAlive, const CsTeams:iTeam, const szArgs[], szMessage[], const iLen)
 {
+	static szPlaceHolder[PLACEHOLDER_LENGTH]
 	copy(szMessage, iLen, g_eSettings[bTeam ? FORMAT_SAY_TEAM : FORMAT_SAY])
-	replace_all(szMessage, iLen, g_eArgs[ARG_ADMIN_PREFIX], g_ePlayerData[id][PDATA_PREFIX])
-	replace_all(szMessage, iLen, g_eArgs[ARG_DEAD_PREFIX], g_eSettings[iAlive ? ALIVE_PREFIX : DEAD_PREFIX])
-	replace_all(szMessage, iLen, g_eArgs[ARG_TEAM], g_eSettings[iTeam == CS_TEAM_CT ? TEAM_PREFIX_CT : iTeam == CS_TEAM_T ? TEAM_PREFIX_T : TEAM_PREFIX_SPEC])
-	replace_all(szMessage, iLen, g_eArgs[ARG_NAME], g_ePlayerData[id][PDATA_NAME])
-	replace_all(szMessage, iLen, g_eArgs[ARG_IP], g_ePlayerData[id][PDATA_IP])
-	replace_all(szMessage, iLen, g_eArgs[ARG_STEAM], g_ePlayerData[id][PDATA_STEAM])
-	replace_all(szMessage, iLen, g_eArgs[ARG_USERID], g_ePlayerData[id][PDATA_USERID])
-	replace_all(szMessage, iLen, g_eArgs[ARG_CHAT_COLOR], g_ePlayerData[id][PDATA_CHAT_COLOR])
-	replace_all(szMessage, iLen, g_eArgs[ARG_MESSAGE], szArgs)	
-	replace_all(szMessage, iLen, g_eArgs[ARG_TIME], get_timestring())
+	
+	#if defined ARG_ADMIN_PREFIX
+	replace_all(szMessage, iLen, ARG_ADMIN_PREFIX, g_ePlayerData[id][PDATA_PREFIX])
+	#endif
+	
+	#if defined ARG_DEAD_PREFIX
+	replace_all(szMessage, iLen, ARG_DEAD_PREFIX, g_eSettings[iAlive ? ALIVE_PREFIX : DEAD_PREFIX])
+	#endif
+	
+	#if defined ARG_TEAM
+	replace_all(szMessage, iLen, ARG_TEAM, g_eSettings[iTeam == CS_TEAM_CT ? TEAM_PREFIX_CT : iTeam == CS_TEAM_T ? TEAM_PREFIX_T : TEAM_PREFIX_SPEC])
+	#endif
+	
+	#if defined ARG_NAME
+	replace_all(szMessage, iLen, ARG_NAME, g_ePlayerData[id][PDATA_NAME])
+	#endif
+	
+	#if defined ARG_IP
+	replace_all(szMessage, iLen, ARG_IP, g_ePlayerData[id][PDATA_IP])
+	#endif
+	
+	#if defined ARG_STEAM
+	replace_all(szMessage, iLen, ARG_STEAM, g_ePlayerData[id][PDATA_STEAM])
+	#endif
+	
+	#if defined ARG_USERID
+	replace_all(szMessage, iLen, ARG_USERID, g_ePlayerData[id][PDATA_USERID])
+	#endif
+	
+	#if defined ARG_CHAT_COLOR
+	replace_all(szMessage, iLen, ARG_CHAT_COLOR, g_ePlayerData[id][PDATA_CHAT_COLOR])
+	#endif
+	
+	#if defined ARG_MESSAGE
+	replace_all(szMessage, iLen, ARG_MESSAGE, szArgs)	
+	#endif
+	
+	#if defined ARG_TIME
+	if(has_argument(szMessage, ARG_TIME))
+	{
+		get_time(g_eSettings[FORMAT_TIME], szPlaceHolder, charsmax(szPlaceHolder))
+		replace_all(szMessage, iLen, ARG_TIME, szPlaceHolder)
+	}
+	#endif
+	
+	#if defined ARG_HEALTH
+	if(has_argument(szMessage, ARG_HEALTH))
+	{
+		num_to_str(iAlive ? get_user_health(id) : 0, szPlaceHolder, charsmax(szPlaceHolder))
+		replace_all(szMessage, iLen, ARG_HEALTH, szPlaceHolder)
+	}
+	#endif
+	
+	#if defined ARG_ARMOR
+	if(has_argument(szMessage, ARG_ARMOR))
+	{
+		num_to_str(iAlive ? get_user_armor(id) : 0, szPlaceHolder, charsmax(szPlaceHolder))
+		replace_all(szMessage, iLen, ARG_ARMOR, szPlaceHolder)
+	}
+	#endif
+	
+	#if defined ARG_FRAGS
+	if(has_argument(szMessage, ARG_FRAGS))
+	{
+		num_to_str(get_user_frags(id), szPlaceHolder, charsmax(szPlaceHolder))
+		replace_all(szMessage, iLen, ARG_FRAGS, szPlaceHolder)
+	}
+	#endif
+	
+	#if defined ARG_DEATHS
+	if(has_argument(szMessage, ARG_DEATHS))
+	{
+		num_to_str(cs_get_user_deaths(id), szPlaceHolder, charsmax(szPlaceHolder))
+		replace_all(szMessage, iLen, ARG_DEATHS, szPlaceHolder)
+	}
+	#endif
+	
+	#if defined ARG_CITY
+	if(has_argument(szMessage, ARG_CITY))
+	{
+		geoip_city(g_ePlayerData[id][PDATA_IP], szPlaceHolder, charsmax(szPlaceHolder))
+		check_validity(szPlaceHolder, charsmax(szPlaceHolder))
+		replace_all(szMessage, iLen, ARG_CITY, szPlaceHolder)
+	}
+	#endif
+	
+	#if defined ARG_COUNTRY
+	if(has_argument(szMessage, ARG_COUNTRY))
+	{
+		geoip_country_ex(g_ePlayerData[id][PDATA_IP], szPlaceHolder, charsmax(szPlaceHolder))
+		check_validity(szPlaceHolder, charsmax(szPlaceHolder))
+		replace_all(szMessage, iLen, ARG_COUNTRY, szPlaceHolder)
+	}
+	#endif
+	
+	#if defined ARG_COUNTRY_CODE
+	if(has_argument(szMessage, ARG_COUNTRY_CODE))
+	{
+		new szCountryCode[3]
+		geoip_code2_ex(g_ePlayerData[id][PDATA_IP], szCountryCode)
+		check_validity(szCountryCode, charsmax(szCountryCode))
+		replace_all(szMessage, iLen, ARG_COUNTRY_CODE, szCountryCode)
+	}
+	#endif
+	
+	#if defined ARG_CONTINENT
+	if(has_argument(szMessage, ARG_CONTINENT))
+	{
+		geoip_continent_name(g_ePlayerData[id][PDATA_IP], szPlaceHolder, charsmax(szPlaceHolder))
+		check_validity(szPlaceHolder, charsmax(szPlaceHolder))
+		replace_all(szMessage, iLen, ARG_CONTINENT, szPlaceHolder)
+	}
+	#endif
+	
+	#if defined ARG_CONTINENT_CODE
+	if(has_argument(szMessage, ARG_CONTINENT_CODE))
+	{
+		new szContinentCode[3]
+		geoip_continent_code(g_ePlayerData[id][PDATA_IP], szContinentCode)
+		check_validity(szContinentCode, charsmax(szContinentCode))
+		replace_all(szMessage, iLen, ARG_CONTINENT_CODE, szContinentCode)
+	}
+	#endif
+	
 	replace_all(szMessage, iLen, "  ", "")
 	trim(szMessage)
 }
 
-get_timestring()
+stock bool:has_argument(const szMessage[], const szArgument[])
+	return contain(szMessage, szArgument) != -1
+
+stock check_validity(szText[], const iLen)
 {
-	new szTime[64]
-	get_time(g_eSettings[FORMAT_TIME], szTime, charsmax(szTime))
-	return szTime
+	if(!szText[0])
+		copy(szText, iLen, g_eSettings[ERROR_TEXT])
 }
 
 public plugin_natives()
