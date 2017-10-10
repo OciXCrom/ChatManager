@@ -3,7 +3,7 @@
 #include <cromchat>
 #include <cstrike>
 
-#define PLUGIN_VERSION "3.6"
+#define PLUGIN_VERSION "3.6a"
 #define DELAY_ON_CONNECT 1.0
 #define DELAY_ON_CHANGE 0.1
 #define PLACEHOLDER_LENGTH 64
@@ -194,7 +194,10 @@ public Hook_Say(id)
 	read_args(szArgs, charsmax(szArgs)); remove_quotes(szArgs)
 	CC_RemoveColors(szArgs, charsmax(szArgs))
 	
-	if(!szArgs[0] || TrieKeyExists(g_tBlockFirst, szArgs[0]))
+	new szFirstChar[2]
+	szFirstChar[0] = szArgs[0]
+	
+	if(!szArgs[0] || TrieKeyExists(g_tBlockFirst, szFirstChar))
 		return PLUGIN_HANDLED
 		
 	new szCommand[5]
