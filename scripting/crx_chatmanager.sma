@@ -3,7 +3,8 @@
 #include <cromchat>
 #include <cstrike>
 
-#define PLUGIN_VERSION "3.6a"
+#define PLUGIN_VERSION "3.6b"
+#define DELAY_ON_REGISTER 1.0
 #define DELAY_ON_CONNECT 1.0
 #define DELAY_ON_CHANGE 0.1
 #define PLACEHOLDER_LENGTH 64
@@ -91,8 +92,7 @@ public plugin_init()
 {
 	register_plugin("Chat Manager", PLUGIN_VERSION, "OciXCrom")
 	register_cvar("CRXChatManager", PLUGIN_VERSION, FCVAR_SERVER|FCVAR_SPONLY|FCVAR_UNLOGGED)
-	register_clcmd("say", "Hook_Say")
-	register_clcmd("say_team", "Hook_Say")
+	set_task(DELAY_ON_REGISTER, "RegisterCommands")
 	g_aAdminFlags = ArrayCreate(32)
 	g_aAdminPrefixes = ArrayCreate(32)
 	g_aChatColors = ArrayCreate(6)
@@ -114,6 +114,12 @@ public plugin_end()
 	TrieDestroy(g_tName)
 	TrieDestroy(g_tIP)
 	TrieDestroy(g_tSteam)
+}
+
+public RegisterCommands()
+{
+	register_clcmd("say", "Hook_Say")
+	register_clcmd("say_team", "Hook_Say")
 }
 
 public client_putinserver(id)
