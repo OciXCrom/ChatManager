@@ -3,7 +3,7 @@
 #include <cromchat>
 #include <cstrike>
 
-#define PLUGIN_VERSION "3.6b"
+#define PLUGIN_VERSION "3.6c"
 #define DELAY_ON_REGISTER 1.0
 #define DELAY_ON_CONNECT 1.0
 #define DELAY_ON_CHANGE 0.1
@@ -445,7 +445,12 @@ format_chat_message(const bool:bTeam, const id, const iAlive, const CsTeams:iTea
 	#if defined ARG_COUNTRY
 	if(has_argument(szMessage, ARG_COUNTRY))
 	{
+		#if defined geoip_country_ex
 		geoip_country_ex(g_ePlayerData[id][PDATA_IP], szPlaceHolder, charsmax(szPlaceHolder))
+		#else
+		geoip_country(g_ePlayerData[id][PDATA_IP], szPlaceHolder, charsmax(szPlaceHolder))
+		#endif
+		
 		check_validity(szPlaceHolder, charsmax(szPlaceHolder))
 		replace_all(szMessage, iLen, ARG_COUNTRY, szPlaceHolder)
 	}
@@ -455,7 +460,13 @@ format_chat_message(const bool:bTeam, const id, const iAlive, const CsTeams:iTea
 	if(has_argument(szMessage, ARG_COUNTRY_CODE))
 	{
 		new szCountryCode[3]
+		
+		#if defined geoip_code2_ex
 		geoip_code2_ex(g_ePlayerData[id][PDATA_IP], szCountryCode)
+		#else
+		geoip_code2(g_ePlayerData[id][PDATA_IP], szCountryCode)
+		#endif
+		
 		check_validity(szCountryCode, charsmax(szCountryCode))
 		replace_all(szMessage, iLen, ARG_COUNTRY_CODE, szCountryCode)
 	}
