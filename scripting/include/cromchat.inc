@@ -52,22 +52,30 @@ new const CC_MENU_COLORS[][] = { "\y", "\r", "\w", "\d", "\R" }
 	new const CC_PLUS_COLORS[][] = { "&x07", "TERRORIST", "&x06", "CT", "&x05", "SPECTATOR" }
 	new const CC_COLORS_LIST[][] = { "&x07", "&x06", "&x05", "&x04", "&x03", "&x01", "&x00" }
 	new const CC_NO_PREFIX[] = "&x00"
-	#elseif CC_COLORS_TYPE == CC_COLORS_SHORT
+	#endif
+	
+	#if CC_COLORS_TYPE == CC_COLORS_SHORT
 	new const CC_REPLACE_COLORS[][] = { "!g", "^x04", "!t", "^x03", "!n", "^x01" }
 	new const CC_PLUS_COLORS[][] = { "!r", "TERRORIST", "!b", "CT", "!w", "SPECTATOR" }
 	new const CC_COLORS_LIST[][] = { "!r", "!b", "!w", "!g", "!t", "!n", "!p" }
 	new const CC_NO_PREFIX[] = "!p"
-	#elseif CC_COLORS_TYPE == CC_COLORS_NAMED
+	#endif
+	
+	#if CC_COLORS_TYPE == CC_COLORS_NAMED
 	new const CC_REPLACE_COLORS[][] = { "{green}", "^x04", "{team}", "^x03", "{normal}", "^x01" }
 	new const CC_PLUS_COLORS[][] = { "{red}", "TERRORIST", "{blue}", "CT", "{white}", "SPECTATOR" }
 	new const CC_COLORS_LIST[][] = { "{red}", "{blue}", "{white}", "{green}", "{team}", "{normal}", "{nopref}" }
 	new const CC_NO_PREFIX[] = "{nopref}"
-	#elseif CC_COLORS_TYPE == CC_COLORS_NAMED_SHORT
+	#endif
+	
+	#if CC_COLORS_TYPE == CC_COLORS_NAMED_SHORT
 	new const CC_REPLACE_COLORS[][] = { "{g}", "^x04", "{t}", "^x03", "{n}", "^x01" }
 	new const CC_PLUS_COLORS[][] = { "{r}", "TERRORIST", "{b}", "CT", "{w}", "SPECTATOR" }
 	new const CC_COLORS_LIST[][] = { "{r}", "{b}", "{w}", "{g}", "{t}", "{n}", "{p}" }
 	new const CC_NO_PREFIX[] = "{p}"
-	#elseif CC_COLORS_TYPE == CC_COLORS_STANDARD
+	#endif
+	
+	#if CC_COLORS_TYPE == CC_COLORS_STANDARD
 	new const CC_REPLACE_COLORS[][] = { "^4", "^x04", "^3", "^x03", "^1", "^x01" }
 	new const CC_PLUS_COLORS[][] = { "^7", "TERRORIST", "^6", "CT", "^5", "SPECTATOR" }
 	new const CC_COLORS_LIST[][] = { "^7", "^6", "^5", "^4", "^3", "^1", "^0" }
