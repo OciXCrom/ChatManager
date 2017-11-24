@@ -3,7 +3,7 @@
 #include <cromchat>
 #include <cstrike>
 
-#define PLUGIN_VERSION "3.6.3"
+#define PLUGIN_VERSION "3.6.4"
 #define DELAY_ON_REGISTER 1.0
 #define DELAY_ON_CONNECT 1.0
 #define DELAY_ON_CHANGE 0.1
@@ -196,6 +196,9 @@ public UpdateData(id)
 
 public Hook_Say(id)
 {
+	if(!is_user_connected(id))
+		return PLUGIN_HANDLED
+		
 	new szArgs[192]
 	read_args(szArgs, charsmax(szArgs)); remove_quotes(szArgs)
 	CC_RemoveColors(szArgs, charsmax(szArgs))
