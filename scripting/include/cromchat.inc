@@ -4,17 +4,25 @@
 
 #define _cromchat_included
 
-#if !defined ColorChat
-	#define ColorChat CC_SendMessage
+#if !defined CC_DONT_OVERWRITE_183_PRINT
+	#define client_print_color CC_SendMatched
+	#define print_team_default CC_COLOR_TEAM
+	#define print_team_grey CC_COLOR_GREY
+	#define print_team_blue CC_COLOR_BLUE
+	#define print_team_red CC_COLOR_RED
 #endif
 
-#if !defined client_print_color
-	#define client_print_color CC_SendMessage
+#if !defined CC_DONT_OVERWRITE_COLORCHAT
+	#define ColorChat CC_SendMatched
+	#define NORMAL CC_COLOR_TEAM
+	#define TEAM_COLOR CC_COLOR_TEAM
+	#define GREEN CC_COLOR_TEAM
+	#define GREY CC_COLOR_GREY
+	#define BLUE CC_COLOR_BLUE
+	#define RED CC_COLOR_RED
 #endif
 
-#define CromChat CC_SendMessage
-
-#define CC_VERSION 1.3
+#define CC_VERSION 1.4
 #define CC_MAX_TEAM_SIZE 10
 #define CC_MAX_PLAYERS 32
 #define CC_MAX_PREFIX_SIZE 64
@@ -82,7 +90,16 @@ new const CC_MENU_COLORS[][] = { "\y", "\r", "\w", "\d", "\R" }
 	new const CC_NO_PREFIX[] = "^2"
 	#endif
 #endif
-	
+
+/**
+ * Sends a colored chat message.
+ *
+ * @param id     	Client index (use 0 to send to all players)
+ * @param szInput	The message to send
+ * @param ... 		Variable number of formatting parameters
+ *
+ * @return          Length of the printed message
+ */
 stock CC_SendMessage(const id, const szInput[], any:...)
 {
 	static iPlayers[CC_MAX_PLAYERS], iPnum
@@ -141,6 +158,20 @@ stock CC_SendMessage(const id, const szInput[], any:...)
 	return strlen(szMessage)
 }
 
+/**
+ * Sends a colored chat message matching a specific player's color.
+ *
+ * @note 	You can use the iPlayer argument to set a specific color instead of matching it automtaically.
+			To do this, you can use one of the following color arguments:
+			CC_COLORS_TEAM, CC_COLORS_GREY (or CC_COLORS_WHITE), CC_COLORS_BLUE, CC_COLORS_RED.
+*
+ * @param id     	Client index (use 0 to send to all players)
+ * @param iPlayer   Matching player's index
+ * @param szInput	The message to send
+ * @param ... 		Variable number of formatting parameters
+ *
+ * @return          Length of the printed message
+ */
 stock CC_SendMatched(const id, const iPlayer, const szInput[], any:...)
 {
 	static szMessage[CC_MAX_MESSAGE_SIZE]
@@ -171,6 +202,18 @@ stock CC_SendMatched(const id, const iPlayer, const szInput[], any:...)
 	return CC_SendMessage(id, szMessage)
 }
 
+/**
+ * Sends a colored chat message and logs it at the same time.
+ *
+ * @note 	If the file name is not set, the default log file will be used instead.
+ *
+ * @param id     	Client index (use 0 to send to all players)
+ * @param szFile   	The log file that will be used
+ * @param szInput	The message to send
+ * @param ... 		Variable number of formatting parameters
+ *
+ * @return          Length of the printed message
+ */
 stock CC_LogMessage(const id, const szFile[] = "", const szInput[], any:...)
 {
 	static szMessage[CC_MAX_MESSAGE_SIZE]
@@ -183,7 +226,16 @@ stock CC_LogMessage(const id, const szFile[] = "", const szInput[], any:...)
 	szFile[0] ? log_to_file(szFile, szMessage) : log_amx(szMessage)
 	return strlen(szMessage)
 }
-	
+
+/**
+ * This function is used by the other stocks to send a raw message.
+ *
+ * @param id     	Client index (use 0 to send to all players)
+ * @param szMessage	The message to send
+ * @param szTeam 	Message color according to the team
+ *
+ * @noreturn
+ */
 stock CC_WriteMessage(const id, const szMessage[], szTeam[CC_MAX_TEAM_SIZE])
 {
 	static bool:bRefresh
@@ -217,6 +269,16 @@ stock CC_WriteMessage(const id, const szMessage[], szTeam[CC_MAX_TEAM_SIZE])
 	}
 }
 
+/**
+ * Removes the color codes from a message.
+ *
+ * @param szMessage The message to work with
+ * @param iLen		Maximum buffer length
+ * @param bChat		If set to true, it will remove the chat color codes
+ * @param bMenu		If set to true, it will remove the menu color codes
+ *
+ * @noreturn
+ */
 stock CC_RemoveColors(szMessage[], iLen, bool:bChat = true, bool:bMenu = false)
 {
 	static i
@@ -234,6 +296,14 @@ stock CC_RemoveColors(szMessage[], iLen, bool:bChat = true, bool:bMenu = false)
 	}
 }
 
+/**
+ * Updates the player's team info.
+ *
+ * @param id     	Client index
+ * @param szTeam	Team to use
+ *
+ * @noreturn
+ */
 stock CC_SendTeamInfo(const id, const szTeam[CC_MAX_TEAM_SIZE])
 {
 	message_begin(MSG_ONE, CC_MSG_TEAMINFO, _, id)
@@ -242,5 +312,15 @@ stock CC_SendTeamInfo(const id, const szTeam[CC_MAX_TEAM_SIZE])
 	message_end()
 }
 
+/**
+ * Sets a global prefix that will be used for all sent messages.
+ *
+ * @note 	The prefix can be removed in a given message if the prefix-removing symbol is used
+			in the beginning of the message. By default, this symbol is equal to &x00.
+ *
+ * @param szPrefix  The prefix
+ *
+ * @noreturn
+ */
 stock CC_SetPrefix(const szPrefix[])
 	copy(CC_PREFIX, charsmax(CC_PREFIX), szPrefix)
