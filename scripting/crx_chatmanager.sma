@@ -3,7 +3,7 @@
 #include <cromchat>
 #include <cstrike>
 
-#define PLUGIN_VERSION "3.6.4"
+#define PLUGIN_VERSION "3.6.5"
 #define DELAY_ON_REGISTER 1.0
 #define DELAY_ON_CONNECT 1.0
 #define DELAY_ON_CHANGE 0.1
@@ -519,6 +519,7 @@ public plugin_natives()
 	register_native("cm_total_chat_colors", "_cm_total_chat_colors")
 	register_native("cm_total_prefixes", "_cm_total_chat_colors")
 	register_native("cm_update_player_data", "_cm_update_player_data")
+	register_native("cm_set_user_prefix", "_cm_set_user_prefix")
 }
 
 public _cm_get_admin_prefix(iPlugin, iParams)
@@ -567,3 +568,6 @@ public bool:_cm_has_user_admin_listen(iPlugin, iParams)
 	
 public _cm_update_player_data(iPlugin, iParams)
 	UpdateData(get_param(1))
+
+public _cm_set_user_prefix(iPlugin, iParams)
+	get_string(2, g_ePlayerData[get_param(1)][PDATA_PREFIX], charsmax(g_ePlayerData[][PDATA_PREFIX]))
