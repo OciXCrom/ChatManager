@@ -246,7 +246,7 @@ ReadFile()
 			
 			switch(szData[0])
 			{
-				case EOS, ';': continue
+				case EOS, '#', ';': continue
 				case '[':
 				{
 					iSize = strlen(szData)
