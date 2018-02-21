@@ -22,11 +22,12 @@
 	#define RED CC_COLOR_RED
 #endif
 
-#define CC_VERSION 1.4
+#define CC_VERSION 1.5
 #define CC_MAX_TEAM_SIZE 10
 #define CC_MAX_PLAYERS 32
 #define CC_MAX_PREFIX_SIZE 64
 #define CC_MAX_MESSAGE_SIZE 188
+#define CromChat CC_SendMessage
 
 #if !defined CC_COLORS_TYPE
 	#define CC_COLORS_TYPE CC_COLORS_CROMCHAT
@@ -174,29 +175,42 @@ stock CC_SendMessage(const id, const szInput[], any:...)
  */
 stock CC_SendMatched(const id, const iPlayer, const szInput[], any:...)
 {
-	static szMessage[CC_MAX_MESSAGE_SIZE]
+	static szMessage[CC_MAX_MESSAGE_SIZE], bool:bPlus, i
 	vformat(szMessage[1], charsmax(szMessage), szInput, 4)
 	szMessage[0] = 0x01
+	bPlus = false
 	
-	static iColor
-	
-	if(is_user_connected(iPlayer))
+	for(i = 0; i < sizeof(CC_PLUS_COLORS) - 1; i += 2)
 	{
-		switch(get_user_team(iPlayer))
+		if(contain(szMessage, CC_PLUS_COLORS[i]) != -1)
 		{
-			case 1: iColor = CC_COLOR_RED
-			case 2: iColor = CC_COLOR_BLUE
-			default: iColor = CC_COLOR_GREY
+			bPlus = true
+			break
 		}
 	}
-	else
-		iColor = iPlayer
-		
-	switch(iColor)
+	
+	if(!bPlus)
 	{
-		case CC_COLOR_RED: add(szMessage, charsmax(szMessage), CC_COLORS_LIST[0])
-		case CC_COLOR_BLUE: add(szMessage, charsmax(szMessage), CC_COLORS_LIST[1])
-		case CC_COLOR_GREY: add(szMessage, charsmax(szMessage), CC_COLORS_LIST[2])
+		static iColor
+		
+		if(is_user_connected(iPlayer))
+		{
+			switch(get_user_team(iPlayer))
+			{
+				case 1: iColor = CC_COLOR_RED
+				case 2: iColor = CC_COLOR_BLUE
+				default: iColor = CC_COLOR_GREY
+			}
+		}
+		else
+			iColor = iPlayer
+			
+		switch(iColor)
+		{
+			case CC_COLOR_RED: add(szMessage, charsmax(szMessage), CC_COLORS_LIST[0])
+			case CC_COLOR_BLUE: add(szMessage, charsmax(szMessage), CC_COLORS_LIST[1])
+			case CC_COLOR_GREY: add(szMessage, charsmax(szMessage), CC_COLORS_LIST[2])
+		}
 	}
 	
 	return CC_SendMessage(id, szMessage)
