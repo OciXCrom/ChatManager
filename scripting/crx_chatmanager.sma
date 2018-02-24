@@ -3,7 +3,7 @@
 #include <cromchat>
 #include <cstrike>
 
-#define PLUGIN_VERSION "3.6.5"
+#define PLUGIN_VERSION "3.6.6"
 #define DELAY_ON_REGISTER 1.0
 #define DELAY_ON_CONNECT 1.0
 #define DELAY_ON_CHANGE 0.1
@@ -72,7 +72,9 @@ enum _:PlayerData
 	PDATA_USERID[10],
 	PDATA_PREFIX[32],
 	PDATA_CHAT_COLOR[6],
-	bool:PDATA_ADMIN_LISTEN
+	bool:PDATA_ADMIN_LISTEN,
+	bool:PDATA_PREFIX_ENABLED,
+	bool:PDATA_COLORCHAT_ENABLED
 }
 
 new g_eSettings[Settings],
@@ -130,6 +132,8 @@ public client_putinserver(id)
 	get_user_ip(id, g_ePlayerData[id][PDATA_IP], charsmax(g_ePlayerData[][PDATA_IP]), 1)
 	get_user_authid(id, g_ePlayerData[id][PDATA_STEAM], charsmax(g_ePlayerData[][PDATA_STEAM]))
 	num_to_str(get_user_userid(id), g_ePlayerData[id][PDATA_USERID], charsmax(g_ePlayerData[][PDATA_USERID]))
+	g_ePlayerData[id][PDATA_PREFIX_ENABLED] = true
+	g_ePlayerData[id][PDATA_COLORCHAT_ENABLED] = true
 	set_task(DELAY_ON_CONNECT, "UpdateData", id)
 }
 	
@@ -361,7 +365,10 @@ format_chat_message(const bool:bTeam, const id, const iAlive, const CsTeams:iTea
 	copy(szMessage, iLen, g_eSettings[bTeam ? FORMAT_SAY_TEAM : FORMAT_SAY])
 	
 	#if defined ARG_ADMIN_PREFIX
-	replace_all(szMessage, iLen, ARG_ADMIN_PREFIX, g_ePlayerData[id][PDATA_PREFIX])
+	if(g_ePlayerData[id][PDATA_PREFIX_ENABLED])
+		replace_all(szMessage, iLen, ARG_ADMIN_PREFIX, g_ePlayerData[id][PDATA_PREFIX])
+	else
+		replace_all(szMessage, iLen, ARG_ADMIN_PREFIX, "")
 	#endif
 	
 	#if defined ARG_DEAD_PREFIX
@@ -389,7 +396,10 @@ format_chat_message(const bool:bTeam, const id, const iAlive, const CsTeams:iTea
 	#endif
 	
 	#if defined ARG_CHAT_COLOR
-	replace_all(szMessage, iLen, ARG_CHAT_COLOR, g_ePlayerData[id][PDATA_CHAT_COLOR])
+	if(g_ePlayerData[id][PDATA_COLORCHAT_ENABLED])
+		replace_all(szMessage, iLen, ARG_CHAT_COLOR, g_ePlayerData[id][PDATA_CHAT_COLOR])
+	else
+		replace_all(szMessage, iLen, ARG_CHAT_COLOR, "")
 	#endif
 	
 	#if defined ARG_MESSAGE
@@ -520,6 +530,10 @@ public plugin_natives()
 	register_native("cm_total_prefixes", "_cm_total_chat_colors")
 	register_native("cm_update_player_data", "_cm_update_player_data")
 	register_native("cm_set_user_prefix", "_cm_set_user_prefix")
+	register_native("cm_get_prefix_status", "_cm_get_prefix_status")
+	register_native("cm_set_prefix_status", "_cm_set_prefix_status")
+	register_native("cm_get_colorchat_status", "_cm_get_colorchat_status")
+	register_native("cm_set_colorchat_status", "_cm_set_colorchat_status")
 }
 
 public _cm_get_admin_prefix(iPlugin, iParams)
@@ -571,3 +585,15 @@ public _cm_update_player_data(iPlugin, iParams)
 
 public _cm_set_user_prefix(iPlugin, iParams)
 	get_string(2, g_ePlayerData[get_param(1)][PDATA_PREFIX], charsmax(g_ePlayerData[][PDATA_PREFIX]))
+
+public bool:_cm_get_prefix_status(iPlugin, iParams)
+	return g_ePlayerData[get_param(1)][PDATA_PREFIX_ENABLED]
+	
+public _cm_set_prefix_status(iPlugin, iParams)
+	g_ePlayerData[get_param(1)][PDATA_PREFIX_ENABLED] = _:get_param(2)
+	
+public bool:_cm_get_colorchat_status(iPlugin, iParams)
+	return g_ePlayerData[get_param(1)][PDATA_COLORCHAT_ENABLED]
+	
+public _cm_set_colorchat_status(iPlugin, iParams)
+	g_ePlayerData[get_param(1)][PDATA_COLORCHAT_ENABLED] = _:get_param(2)
