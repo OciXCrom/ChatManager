@@ -1,2 +1,2 @@
 # ChatManager
-Simple Chat Manager with Admin Prefixes and Color Chat.
+The most complete plugin for taking full control over your chat.
