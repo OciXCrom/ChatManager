@@ -130,7 +130,7 @@ native cm_set_user_prefix(id, prefix[])
  * @param id 			Player's index.
  * @param say 			Temporary say format.
  * @param say_team 		Temporary say_team format.
- * @noreturn
+ * @return				0 if the format doesn't exist, 1 otherwise.
  */
 native cm_set_user_say_format(id, say[], say_team[])
 
