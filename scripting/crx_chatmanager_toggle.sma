@@ -32,7 +32,7 @@ public Menu_Display(id)
 	formatex(szText, charsmax(szText), "%L %L", id, "CM_MENU_CHAT_COLOR", id, cm_get_user_chat_color_status(id) ? "CM_MENU_ENABLED" : "CM_MENU_DISABLED")
 	menu_additem(iMenu, szText)
 	
-	formatex(szText, charsmax(szText), "%L %L", id, "CM_MENU_CUSTOM_NAME_COLOR", id, cm_get_user_custom_name_status(id) ? "CM_MENU_ENABLED" : "CM_MENU_DISABLED")
+	formatex(szText, charsmax(szText), "%L %L", id, "CM_MENU_CUSTOM_NAME", id, cm_get_user_custom_name_status(id) ? "CM_MENU_ENABLED" : "CM_MENU_DISABLED")
 	menu_additem(iMenu, szText)
 	
 	menu_display(id, iMenu)
