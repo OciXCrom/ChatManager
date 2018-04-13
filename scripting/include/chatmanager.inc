@@ -34,16 +34,6 @@ native cm_get_chat_color_by_num(num, buffer[], len)
 native cm_get_prefix_by_num(num, buffer[], len)
 
 /** 
- * Returns the client's admin prefix.
- * 
- * @param id 			Player's index.
- * @param buffer 		Buffer to store the prefix in.
- * @param len 			Maximum buffer length.
- * @noreturn
- */
-native cm_get_user_admin_prefix(id, buffer[], len)
-
-/** 
  * Returns the client's chat color.
  * 
  * @param id 			Player's index.
@@ -62,12 +52,32 @@ native cm_get_user_chat_color(id, buffer[], len)
 native bool:cm_get_user_chat_color_status(id)
 
 /** 
+ * Returns the client's custom name.
+ * 
+ * @param id 			Player's index.
+ * @param buffer 		Buffer to store the custom name in.
+ * @param len 			Maximum buffer length.
+ * @noreturn
+ */
+native cm_get_user_custom_name(id, buffer[], len)
+
+/** 
  * Checks whether the client's custom name is enabled or disabled.
  * 
  * @param id 			Player's index.
  * @return				True if it's enabled, false otherwise.
  */
 native bool:cm_get_user_custom_name_status(id)
+
+/** 
+ * Returns the client's prefix.
+ * 
+ * @param id 			Player's index.
+ * @param buffer 		Buffer to store the prefix in.
+ * @param len 			Maximum buffer length.
+ * @noreturn
+ */
+native cm_get_user_prefix(id, buffer[], len)
 
 /** 
  * Checks whether the client's prefix is enabled or disabled.
