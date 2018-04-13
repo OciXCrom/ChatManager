@@ -3,7 +3,7 @@
 #include <cromchat>
 #include <cstrike>
 
-#define PLUGIN_VERSION "4.0"
+#define PLUGIN_VERSION "4.1"
 #define DELAY_ON_REGISTER 1.0
 #define DELAY_ON_CONNECT 1.0
 #define DELAY_ON_CHANGE 0.1
@@ -59,7 +59,9 @@ enum
 	INFOTYPE_FLAG,
 	INFOTYPE_NAME,
 	INFOTYPE_IP,
-	INFOTYPE_STEAM
+	INFOTYPE_STEAM,
+	INFOTYPE_ANY_FLAG,
+	INFOTYPE_NO_PREFIX
 }
 
 enum
@@ -109,7 +111,8 @@ enum _:PlayerData
 	PDATA_ADMIN_FLAGS,
 	bool:PDATA_ADMIN_LISTEN,
 	bool:PDATA_PREFIX_ENABLED,
-	bool:PDATA_COLORCHAT_ENABLED
+	bool:PDATA_CHAT_COLOR_ENABLED,
+	bool:PDATA_CUSTOM_NAME_ENABLED
 }
 
 new g_eSettings[Settings],
@@ -173,7 +176,8 @@ public client_putinserver(id)
 	get_user_authid(id, g_ePlayerData[id][PDATA_STEAM], charsmax(g_ePlayerData[][PDATA_STEAM]))
 	num_to_str(get_user_userid(id), g_ePlayerData[id][PDATA_USERID], charsmax(g_ePlayerData[][PDATA_USERID]))
 	g_ePlayerData[id][PDATA_PREFIX_ENABLED] = true
-	g_ePlayerData[id][PDATA_COLORCHAT_ENABLED] = true
+	g_ePlayerData[id][PDATA_CHAT_COLOR_ENABLED] = true
+	g_ePlayerData[id][PDATA_CUSTOM_NAME_ENABLED] = true
 	set_task(DELAY_ON_CONNECT, "UpdateData", id)
 }
 
@@ -411,12 +415,6 @@ ReadFile()
 							
 							if(invalid_info_type(eItem[INFO_TYPE], szKey, iLine))
 								continue
-								
-							if(eItem[INFO_TYPE] == INFOTYPE_FLAG)
-							{
-								log_config_error(iLine, "Can't set a custom name on admin flag(s).")
-								continue
-							}
 							
 							ArrayPushArray(g_aNameCustomization, eItem)
 							g_iNameCustomization++
@@ -597,7 +595,7 @@ apply_replacements(const szFormat[], const id, const iAlive, const CsTeams:iTeam
 	#endif
 	
 	#if defined ARG_CUSTOM_NAME
-	replace_all(szMessage, iLen, ARG_CUSTOM_NAME, g_ePlayerData[id][PDATA_CUSTOM_NAME])
+	replace_all(szMessage, iLen, ARG_CUSTOM_NAME, g_ePlayerData[id][g_ePlayerData[id][PDATA_CUSTOM_NAME_ENABLED] ? PDATA_CUSTOM_NAME : PDATA_NAME])
 	#endif
 	
 	#if defined ARG_IP
@@ -613,7 +611,7 @@ apply_replacements(const szFormat[], const id, const iAlive, const CsTeams:iTeam
 	#endif
 	
 	#if defined ARG_CHAT_COLOR
-	if(g_ePlayerData[id][PDATA_COLORCHAT_ENABLED])
+	if(g_ePlayerData[id][PDATA_CHAT_COLOR_ENABLED])
 		replace_all(szMessage, iLen, ARG_CHAT_COLOR, g_ePlayerData[id][PDATA_CHAT_COLOR])
 	else
 		replace_all(szMessage, iLen, ARG_CHAT_COLOR, "")
@@ -773,6 +771,16 @@ bool:meets_requirements(const id, const iInfoType, const szInfo[])
 			if(equal(g_ePlayerData[id][PDATA_STEAM], szInfo))
 				return true
 		}
+		case INFOTYPE_ANY_FLAG:
+		{
+			if(g_ePlayerData[id][PDATA_ADMIN_FLAGS] & read_flags(szInfo))
+				return true
+		}
+		case INFOTYPE_NO_PREFIX:
+		{
+			if(!g_ePlayerData[id][PDATA_PREFIX][0] || !g_ePlayerData[id][PDATA_PREFIX_ENABLED])
+				return true
+		}
 	}
 	
 	return false
@@ -796,9 +804,17 @@ get_info_type(const szText[])
 	switch(szText[0])
 	{
 		case 'F', 'f': iInfoType = INFOTYPE_FLAG
-		case 'N', 'n': iInfoType = INFOTYPE_NAME
+		case 'N', 'n':
+		{
+			switch(szText[1])
+			{
+				case 'A', 'a': iInfoType = INFOTYPE_NAME
+				case 'O', 'o': iInfoType = INFOTYPE_NO_PREFIX
+			}
+		}
 		case 'I', 'i': iInfoType = INFOTYPE_IP
 		case 'S', 's': iInfoType = INFOTYPE_STEAM
+		case 'A', 'a': iInfoType = INFOTYPE_ANY_FLAG
 	}
 	
 	return iInfoType
@@ -807,34 +823,30 @@ get_info_type(const szText[])
 public plugin_natives()
 {
 	register_library("chatmanager")
-	register_native("cm_get_admin_listen_flags", 	"_cm_get_admin_listen_flags")
-	register_native("cm_get_admin_prefix", 			"_cm_get_admin_prefix")
-	register_native("cm_get_chat_color", 			"_cm_get_chat_color")
-	register_native("cm_get_chat_color_by_num", 	"_cm_get_chat_color_by_num")
-	register_native("cm_get_colorchat_status", 		"_cm_get_colorchat_status")
-	register_native("cm_get_prefix_by_num", 		"_cm_get_prefix_by_num")
-	register_native("cm_get_prefix_status", 		"_cm_get_prefix_status")
-	register_native("cm_has_user_admin_listen", 	"_cm_has_user_admin_listen")
-	register_native("cm_reload_config_file", 		"_cm_reload_config_file")
-	register_native("cm_set_colorchat_status", 		"_cm_set_colorchat_status")
-	register_native("cm_set_prefix_status", 		"_cm_set_prefix_status")
-	register_native("cm_set_user_chat_color", 		"_cm_set_user_chat_color")
-	register_native("cm_set_user_prefix", 			"_cm_set_user_prefix")
-	register_native("cm_set_user_say_format", 		"_cm_set_user_say_format")
-	register_native("cm_total_chat_colors", 		"_cm_total_chat_colors")
-	register_native("cm_total_prefixes", 			"_cm_total_chat_colors")
-	register_native("cm_total_say_formats", 		"_cm_total_say_formats")
-	register_native("cm_update_player_data", 		"_cm_update_player_data")
+	register_native("cm_get_admin_listen_flags", 		"_cm_get_admin_listen_flags")
+	register_native("cm_get_chat_color_by_num", 		"_cm_get_chat_color_by_num")
+	register_native("cm_get_prefix_by_num", 			"_cm_get_prefix_by_num")
+	register_native("cm_get_user_admin_prefix", 		"_cm_get_user_admin_prefix")
+	register_native("cm_get_user_chat_color", 			"_cm_get_user_chat_color")
+	register_native("cm_get_user_chat_color_status", 	"_cm_get_user_chat_color_status")
+	register_native("cm_get_user_custom_name_status",	"_cm_get_user_custom_name_status")
+	register_native("cm_get_user_prefix_status", 		"_cm_get_user_prefix_status")
+	register_native("cm_has_user_admin_listen", 		"_cm_has_user_admin_listen")
+	register_native("cm_reload_config_file", 			"_cm_reload_config_file")
+	register_native("cm_set_user_chat_color", 			"_cm_set_user_chat_color")
+	register_native("cm_set_user_chat_color_status", 	"_cm_set_user_chat_color_status")
+	register_native("cm_set_user_custom_name_status", 	"_cm_set_user_custom_name_status")
+	register_native("cm_set_user_prefix", 				"_cm_set_user_prefix")
+	register_native("cm_set_user_prefix_status", 		"_cm_set_user_prefix_status")
+	register_native("cm_set_user_say_format", 			"_cm_set_user_say_format")
+	register_native("cm_total_chat_colors", 			"_cm_total_chat_colors")
+	register_native("cm_total_prefixes", 				"_cm_total_chat_colors")
+	register_native("cm_total_say_formats", 			"_cm_total_say_formats")
+	register_native("cm_update_player_data", 			"_cm_update_player_data")
 }
 
 public _cm_get_admin_listen_flags(iPlugin, iParams)
 	set_string(1, g_eSettings[ADMIN_LISTEN_FLAGS], get_param(2))
-
-public _cm_get_admin_prefix(iPlugin, iParams)
-	set_string(2, g_ePlayerData[get_param(1)][PDATA_PREFIX], get_param(3))
-	
-public _cm_get_chat_color(iPlugin, iParams)
-	set_string(2, g_ePlayerData[get_param(1)][PDATA_CHAT_COLOR], get_param(3))
 	
 public _cm_get_chat_color_by_num(iPlugin, iParams)
 {
@@ -849,9 +861,6 @@ public _cm_get_chat_color_by_num(iPlugin, iParams)
 	return 1
 }
 
-public bool:_cm_get_colorchat_status(iPlugin, iParams)
-	return g_ePlayerData[get_param(1)][PDATA_COLORCHAT_ENABLED]
-	
 public _cm_get_prefix_by_num(iPlugin, iParams)
 {
 	new iNum = get_param(1)
@@ -865,27 +874,48 @@ public _cm_get_prefix_by_num(iPlugin, iParams)
 	return 1
 }
 
-public bool:_cm_get_prefix_status(iPlugin, iParams)
-	return g_ePlayerData[get_param(1)][PDATA_PREFIX_ENABLED]
+public _cm_get_user_admin_prefix(iPlugin, iParams)
+	set_string(2, g_ePlayerData[get_param(1)][PDATA_PREFIX], get_param(3))
 	
+public _cm_get_user_chat_color(iPlugin, iParams)
+	set_string(2, g_ePlayerData[get_param(1)][PDATA_CHAT_COLOR], get_param(3))
+
+public bool:_cm_get_user_chat_color_status(iPlugin, iParams)
+	return g_ePlayerData[get_param(1)][PDATA_CHAT_COLOR_ENABLED]
+	
+public bool:_cm_get_user_custom_name_status(iPlugin, iParams)
+	return g_ePlayerData[get_param(1)][PDATA_CUSTOM_NAME_ENABLED]
+
+public bool:_cm_get_user_prefix_status(iPlugin, iParams)
+	return g_ePlayerData[get_param(1)][PDATA_PREFIX_ENABLED]
+
 public bool:_cm_has_user_admin_listen(iPlugin, iParams)
 	return g_ePlayerData[get_param(1)][PDATA_ADMIN_LISTEN]
 	
 public _cm_reload_config_file(iPlugin, iParams)
 	ReadFile()
 	
-public _cm_set_colorchat_status(iPlugin, iParams)
-	g_ePlayerData[get_param(1)][PDATA_COLORCHAT_ENABLED] = _:get_param(2)
-	
-public _cm_set_prefix_status(iPlugin, iParams)
-	g_ePlayerData[get_param(1)][PDATA_PREFIX_ENABLED] = _:get_param(2)
-	
 public _cm_set_user_chat_color(iPlugin, iParams)
 	get_string(2, g_ePlayerData[get_param(1)][PDATA_CHAT_COLOR], charsmax(g_ePlayerData[][PDATA_CHAT_COLOR]))
+	
+public _cm_set_user_chat_color_status(iPlugin, iParams)
+	g_ePlayerData[get_param(1)][PDATA_CHAT_COLOR_ENABLED] = _:get_param(2)
+
+public _cm_set_user_custom_name_status(iPlugin, iParams)
+	g_ePlayerData[get_param(1)][PDATA_CUSTOM_NAME_ENABLED] = _:get_param(2)
 	
 public _cm_set_user_prefix(iPlugin, iParams)
 	get_string(2, g_ePlayerData[get_param(1)][PDATA_PREFIX], charsmax(g_ePlayerData[][PDATA_PREFIX]))
 	
+public _cm_set_user_prefix_status(iPlugin, iParams)
+{
+	static id; id = get_param(1)
+	g_ePlayerData[id][PDATA_PREFIX_ENABLED] = _:get_param(2)
+	
+	if(get_param(3))
+		UpdateData(id)
+}
+
 public _cm_set_user_say_format(iPlugin, iParams)
 {
 	static szFormat[32], id
