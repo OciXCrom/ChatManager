@@ -1,0 +1,23 @@
+[en]
+CM_MENU_TITLE = \y[\rChat Manager\y] \wUser Settings
+CM_MENU_PREFIX = Prefix
+CM_MENU_CHAT_COLOR = Chat Color
+CM_MENU_CUSTOM_NAME = Custom Name
+CM_MENU_ENABLED = \y[ON]
+CM_MENU_DISABLED = \r[OFF]
+
+[mk]
+CM_MENU_TITLE = \y[\rChat Manager\y] \wPrilagoduvanja
+CM_MENU_PREFIX = Prefiks
+CM_MENU_CHAT_COLOR = Boja na chatot
+CM_MENU_CUSTOM_NAME = Specijalno ime
+CM_MENU_ENABLED = \y[VKLUCHENO]
+CM_MENU_DISABLED = \r[ISKLUCHENO]
+
+[bg]
+CM_MENU_TITLE = \y[\rChat Manager\y] \wNastroiki
+CM_MENU_PREFIX = Prefiks
+CM_MENU_CHAT_COLOR = Cvqt na chata
+CM_MENU_CUSTOM_NAME = Specialno ime
+CM_MENU_ENABLED = \y[VKLUUCHENO]
+CM_MENU_DISABLED = \r[IZKLIUCHENO]
