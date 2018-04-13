@@ -826,10 +826,11 @@ public plugin_natives()
 	register_native("cm_get_admin_listen_flags", 		"_cm_get_admin_listen_flags")
 	register_native("cm_get_chat_color_by_num", 		"_cm_get_chat_color_by_num")
 	register_native("cm_get_prefix_by_num", 			"_cm_get_prefix_by_num")
-	register_native("cm_get_user_admin_prefix", 		"_cm_get_user_admin_prefix")
 	register_native("cm_get_user_chat_color", 			"_cm_get_user_chat_color")
 	register_native("cm_get_user_chat_color_status", 	"_cm_get_user_chat_color_status")
+	register_native("cm_get_user_custom_name",			"_cm_get_user_custom_name")
 	register_native("cm_get_user_custom_name_status",	"_cm_get_user_custom_name_status")
+	register_native("cm_get_user_prefix", 				"_cm_get_user_prefix")
 	register_native("cm_get_user_prefix_status", 		"_cm_get_user_prefix_status")
 	register_native("cm_has_user_admin_listen", 		"_cm_has_user_admin_listen")
 	register_native("cm_reload_config_file", 			"_cm_reload_config_file")
@@ -873,18 +874,21 @@ public _cm_get_prefix_by_num(iPlugin, iParams)
 	set_string(2, szPrefix, get_param(3))
 	return 1
 }
-
-public _cm_get_user_admin_prefix(iPlugin, iParams)
-	set_string(2, g_ePlayerData[get_param(1)][PDATA_PREFIX], get_param(3))
 	
 public _cm_get_user_chat_color(iPlugin, iParams)
 	set_string(2, g_ePlayerData[get_param(1)][PDATA_CHAT_COLOR], get_param(3))
 
 public bool:_cm_get_user_chat_color_status(iPlugin, iParams)
 	return g_ePlayerData[get_param(1)][PDATA_CHAT_COLOR_ENABLED]
+
+public _cm_get_user_custom_name(iPlugin, iParams)
+	set_string(2, g_ePlayerData[get_param(1)][PDATA_CUSTOM_NAME], get_param(3))
 	
 public bool:_cm_get_user_custom_name_status(iPlugin, iParams)
 	return g_ePlayerData[get_param(1)][PDATA_CUSTOM_NAME_ENABLED]
+	
+public _cm_get_user_prefix(iPlugin, iParams)
+	set_string(2, g_ePlayerData[get_param(1)][PDATA_PREFIX], get_param(3))
 
 public bool:_cm_get_user_prefix_status(iPlugin, iParams)
 	return g_ePlayerData[get_param(1)][PDATA_PREFIX_ENABLED]

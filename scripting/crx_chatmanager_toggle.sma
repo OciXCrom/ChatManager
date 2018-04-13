@@ -21,19 +21,25 @@ public plugin_init()
 
 public Menu_Display(id)
 {
-	new szText[128]
+	new szText[128], szItem[128]
 	formatex(szText, charsmax(szText), "%L", id, "CM_MENU_TITLE")
 	
 	new iMenu = menu_create(szText, "Menu_Handler")
 
-	formatex(szText, charsmax(szText), "%L %L", id, "CM_MENU_PREFIX", id, cm_get_user_prefix_status(id) ? "CM_MENU_ENABLED" : "CM_MENU_DISABLED")
-	menu_additem(iMenu, szText)
+	cm_get_user_prefix(id, szText, charsmax(szText))
+	check_validity(szText, charsmax(szText))
+	formatex(szItem, charsmax(szItem), "%L %L%s", id, "CM_MENU_PREFIX", id, cm_get_user_prefix_status(id) ? "CM_MENU_ENABLED" : "CM_MENU_DISABLED", szText)
+	menu_additem(iMenu, szItem)
 	
-	formatex(szText, charsmax(szText), "%L %L", id, "CM_MENU_CHAT_COLOR", id, cm_get_user_chat_color_status(id) ? "CM_MENU_ENABLED" : "CM_MENU_DISABLED")
-	menu_additem(iMenu, szText)
+	cm_get_user_chat_color(id, szText, charsmax(szText))
+	check_validity(szText, charsmax(szText))
+	formatex(szItem, charsmax(szItem), "%L %L%s", id, "CM_MENU_CHAT_COLOR", id, cm_get_user_chat_color_status(id) ? "CM_MENU_ENABLED" : "CM_MENU_DISABLED", szText)
+	menu_additem(iMenu, szItem)
 	
-	formatex(szText, charsmax(szText), "%L %L", id, "CM_MENU_CUSTOM_NAME", id, cm_get_user_custom_name_status(id) ? "CM_MENU_ENABLED" : "CM_MENU_DISABLED")
-	menu_additem(iMenu, szText)
+	cm_get_user_custom_name(id, szText, charsmax(szText))
+	check_validity(szText, charsmax(szText))
+	formatex(szItem, charsmax(szItem), "%L %L%s", id, "CM_MENU_CUSTOM_NAME", id, cm_get_user_custom_name_status(id) ? "CM_MENU_ENABLED" : "CM_MENU_DISABLED", szText)
+	menu_additem(iMenu, szItem)
 	
 	menu_display(id, iMenu)
 	return PLUGIN_HANDLED
@@ -56,4 +62,10 @@ public Menu_Handler(id, iMenu, iItem)
 	menu_destroy(iMenu)
 	Menu_Display(id)
 	return PLUGIN_HANDLED
+}
+
+check_validity(szText[], const iLen)
+{
+	if(szText[0])
+		format(szText, iLen, "\d: %s", szText)
 }
