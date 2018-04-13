@@ -14,26 +14,6 @@
 native cm_get_admin_listen_flags(buffer[], len)
 
 /** 
- * Returns the client's admin prefix.
- * 
- * @param id 			Player's index.
- * @param buffer 		Buffer to store the prefix in.
- * @param len 			Maximum buffer length.
- * @noreturn
- */
-native cm_get_admin_prefix(id, buffer[], len)
-
-/** 
- * Returns the client's chat color.
- * 
- * @param id 			Player's index.
- * @param buffer 		Buffer to store the chat color in.
- * @param len 			Maximum buffer length.
- * @noreturn
- */
-native cm_get_chat_color(id, buffer[], len)
-
-/** 
  * Finds a chat color by a specified number.
  * 
  * @param num 			Color number.
@@ -42,14 +22,6 @@ native cm_get_chat_color(id, buffer[], len)
  * @return				1 if found, 0 otherwise.
  */
 native cm_get_chat_color_by_num(num, buffer[], len)
-
-/** 
- * Checks whether the client's color chat is enabled or disabled.
- * 
- * @param id 			Player's index.
- * @return				True if it's enabled, false otherwise.
- */
-native bool:cm_get_colorchat_status(id)
 
 /** 
  * Finds a prefix by a specified number.
@@ -62,12 +34,48 @@ native bool:cm_get_colorchat_status(id)
 native cm_get_prefix_by_num(num, buffer[], len)
 
 /** 
+ * Returns the client's admin prefix.
+ * 
+ * @param id 			Player's index.
+ * @param buffer 		Buffer to store the prefix in.
+ * @param len 			Maximum buffer length.
+ * @noreturn
+ */
+native cm_get_user_admin_prefix(id, buffer[], len)
+
+/** 
+ * Returns the client's chat color.
+ * 
+ * @param id 			Player's index.
+ * @param buffer 		Buffer to store the chat color in.
+ * @param len 			Maximum buffer length.
+ * @noreturn
+ */
+native cm_get_user_chat_color(id, buffer[], len)
+
+/** 
+ * Checks whether the client's color chat is enabled or disabled.
+ * 
+ * @param id 			Player's index.
+ * @return				True if it's enabled, false otherwise.
+ */
+native bool:cm_get_user_chat_color_status(id)
+
+/** 
+ * Checks whether the client's custom name is enabled or disabled.
+ * 
+ * @param id 			Player's index.
+ * @return				True if it's enabled, false otherwise.
+ */
+native bool:cm_get_user_custom_name_status(id)
+
+/** 
  * Checks whether the client's prefix is enabled or disabled.
  * 
  * @param id 			Player's index.
  * @return				True if it's enabled, false otherwise.
  */
-native bool:cm_get_prefix_status(id)
+native bool:cm_get_user_prefix_status(id)
 
 /** 
  * Checks if the client has admin listen (can see all chats).
@@ -85,22 +93,6 @@ native bool:cm_has_user_admin_listen(id)
 native cm_reload_config_file()
 
 /** 
- * Enables/Disables the client's color chat.
- * 
- * @param id 			Player's index.
- * @noreturn
- */
-native cm_set_colorchat_status(id, bool:status)
-
-/** 
- * Enables/Disables the client's prefix.
- * 
- * @param id 			Player's index.
- * @noreturn
- */
-native cm_set_prefix_status(id, bool:status)
-
-/** 
  * Sets a temporary chat color on the client.
  * 
  * @note The chat color set with this native won't get saved in the .ini file, so it will be gone after the client's data is updated.
@@ -112,6 +104,24 @@ native cm_set_prefix_status(id, bool:status)
 native cm_set_user_chat_color(id, color[])
 
 /** 
+ * Enables/Disables the client's color chat.
+ * 
+ * @param id 			Player's index.
+ * @param status		True to enable or false to disable.
+ * @noreturn
+ */
+native cm_set_user_chat_color_status(id, bool:status)
+
+/** 
+ * Enables/Disables the client's custom name.
+ * 
+ * @param id 			Player's index.
+ * @param status		True to enable or false to disable.
+ * @noreturn
+ */
+native cm_set_user_custom_name_status(id, bool:status)
+
+/** 
  * Sets a temporary prefix on the client.
  * 
  * @note The prefix set with this native won't get saved in the .ini file, so it will be gone after the client's data is updated.
@@ -121,6 +131,19 @@ native cm_set_user_chat_color(id, color[])
  * @noreturn
  */
 native cm_set_user_prefix(id, prefix[])
+
+/** 
+ * Enables/Disables the client's prefix.
+ * 
+ * @note It is recommended to leave the "update" parameter to "true" because starting from version 4.1
+ *		 custom data can be set to players who don't have a prefix or their prefix is disabled.
+ *
+ * @param id 			Player's index.
+ * @param status		True to enable or false to disable.
+ * @param update		Whether to automatically update the player's data.
+ * @noreturn
+ */
+native cm_set_user_prefix_status(id, bool:status, bool:update = true)
 
 /** 
  * Sets a temporary say format on the client.
