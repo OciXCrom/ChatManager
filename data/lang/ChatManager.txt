@@ -21,3 +21,11 @@ CM_MENU_CHAT_COLOR = Cvqt na chata
 CM_MENU_CUSTOM_NAME = Specialno ime
 CM_MENU_ENABLED = \y[VKLUUCHENO]
 CM_MENU_DISABLED = \r[IZKLIUCHENO]
+
+[bp]
+CM_MENU_TITLE = \y[\rGerenciador de Chat\y] \wConfiguracao do Usuario
+CM_MENU_PREFIX = Prefixo
+CM_MENU_CHAT_COLOR = Cor do Chat
+CM_MENU_CUSTOM_NAME = Nome Customizado
+CM_MENU_ENABLED = \y[ON]
+CM_MENU_DISABLED = \r[OFF]
