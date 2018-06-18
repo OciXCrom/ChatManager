@@ -3,12 +3,13 @@
 #include <cromchat>
 #include <cstrike>
 
-#define PLUGIN_VERSION "4.1"
+#define PLUGIN_VERSION "4.1.1"
 #define DELAY_ON_REGISTER 1.0
 #define DELAY_ON_CONNECT 1.0
 #define DELAY_ON_CHANGE 0.1
 #define PLACEHOLDER_LENGTH 64
-#define CHAT_MESSAGE_SIZE 150
+#define WRITTEN_MESSAGE_SIZE 120
+#define FULL_MESSAGE_SIZE 180
 #define ERROR_FILE "chatmanager_errors.log"
 
 /* 	You can comment placeholders you don't need from the lines below and that will completely deactivate them.
@@ -500,9 +501,10 @@ public Hook_Say(id)
 	if(!is_user_connected(id))
 		return PLUGIN_HANDLED
 		
-	static szArgs[CHAT_MESSAGE_SIZE]
+	static szArgs[WRITTEN_MESSAGE_SIZE]
 	read_args(szArgs, charsmax(szArgs)); remove_quotes(szArgs)
 	CC_RemoveColors(szArgs, charsmax(szArgs))
+	CC_SendMessage(id, "Args: &x03%s", szArgs)
 	
 	static szFirstChar[2]
 	szFirstChar[0] = szArgs[0]
@@ -522,7 +524,7 @@ public Hook_Say(id)
 	static szCommand[5]
 	read_argv(0, szCommand, charsmax(szCommand))
 	
-	static szMessage[CHAT_MESSAGE_SIZE + 32], szSound[128], iPlayers[32], iPnum, bool:bTeam, iAlive, CsTeams:iTeam
+	static szMessage[FULL_MESSAGE_SIZE + 32], szSound[128], iPlayers[32], iPnum, bool:bTeam, iAlive, CsTeams:iTeam
 	bTeam = szCommand[3] == '_'
 	iAlive = is_user_alive(id)
 	iTeam = cs_get_user_team(id)
