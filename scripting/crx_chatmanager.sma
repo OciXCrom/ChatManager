@@ -504,7 +504,6 @@ public Hook_Say(id)
 	static szArgs[WRITTEN_MESSAGE_SIZE]
 	read_args(szArgs, charsmax(szArgs)); remove_quotes(szArgs)
 	CC_RemoveColors(szArgs, charsmax(szArgs))
-	CC_SendMessage(id, "Args: &x03%s", szArgs)
 	
 	static szFirstChar[2]
 	szFirstChar[0] = szArgs[0]
