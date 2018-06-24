@@ -3,7 +3,7 @@
 #include <cromchat>
 #include <cstrike>
 
-#define PLUGIN_VERSION "4.1.1"
+#define PLUGIN_VERSION "4.2"
 #define DELAY_ON_REGISTER 1.0
 #define DELAY_ON_CONNECT 1.0
 #define DELAY_ON_CHANGE 0.1
@@ -27,6 +27,12 @@
 #define ARG_CHAT_COLOR 			"$chat_color$"
 #define ARG_MESSAGE 			"$message$"
 #define ARG_TIME 				"$time$"
+#define ARG_RANK 				"$rank$"
+//#define ARG_CURRENT_XP 		"$current_xp$"
+//#define ARG_NEXT_XP 			"$next_xp$"
+//#define ARG_LEVEL 			"$level$"
+//#define ARG_NEXT_LEVEL 		"$next_level$"
+//#define ARG_NEXT_RANK 		"$next_rank$"
 //#define ARG_HEALTH 			"$health$"
 //#define ARG_ARMOR 			"$armor$"
 //#define ARG_FRAGS 			"$frags$"
@@ -41,6 +47,30 @@
 
 #if defined ARG_CITY || defined ARG_COUNTRY || defined ARG_COUNTRY_CODE || defined ARG_CONTINENT || defined ARG_CONTINENT_CODE
 	#include <geoip>
+#endif
+
+#if defined ARG_CURRENT_XP
+	native crxranks_get_user_xp(id)
+#endif
+
+#if defined ARG_NEXT_XP
+	native crxranks_get_user_next_xp(id)
+#endif
+
+#if defined ARG_LEVEL
+	native crxranks_get_user_level(id)
+#endif
+
+#if defined ARG_NEXT_LEVEL
+	native crxranks_get_user_next_level(id)
+#endif
+
+#if defined ARG_RANK
+	native crxranks_get_user_rank(id, buffer[], len)
+#endif
+
+#if defined ARG_NEXT_RANK
+	native crxranks_get_user_next_rank(id, buffer[], len)
 #endif
 
 enum
@@ -125,6 +155,7 @@ new g_eSettings[Settings],
 	Trie:g_tBlockFirst,
 	Trie:g_tFormatDefinitions,
 	bool:g_bFileWasRead,
+	bool:g_bRankSystem,
 	g_szConfigsName[256],
 	g_szFilename[256],
 	g_iAdminPrefixes,
@@ -136,6 +167,10 @@ public plugin_init()
 {
 	register_plugin("Chat Manager", PLUGIN_VERSION, "OciXCrom")
 	register_cvar("CRXChatManager", PLUGIN_VERSION, FCVAR_SERVER|FCVAR_SPONLY|FCVAR_UNLOGGED)
+	
+	if(LibraryExists("crxranks", LibType_Library))
+		g_bRankSystem = true
+		
 	set_task(DELAY_ON_REGISTER, "RegisterCommands")
 }
 
@@ -626,6 +661,54 @@ apply_replacements(const szFormat[], const id, const iAlive, const CsTeams:iTeam
 	}
 	#endif
 	
+	#if defined ARG_CURRENT_XP
+	if(g_bRankSystem && has_argument(szMessage, ARG_CURRENT_XP))
+	{
+		num_to_str(crxranks_get_user_xp(id), szPlaceHolder, charsmax(szPlaceHolder))
+		replace_all(szMessage, iLen, ARG_CURRENT_XP, szPlaceHolder)
+	}
+	#endif
+	
+	#if defined ARG_NEXT_XP
+	if(g_bRankSystem && has_argument(szMessage, ARG_NEXT_XP))
+	{
+		num_to_str(crxranks_get_user_next_xp(id), szPlaceHolder, charsmax(szPlaceHolder))
+		replace_all(szMessage, iLen, ARG_NEXT_XP, szPlaceHolder)
+	}
+	#endif
+	
+	#if defined ARG_LEVEL
+	if(g_bRankSystem && has_argument(szMessage, ARG_LEVEL))
+	{
+		num_to_str(crxranks_get_user_level(id), szPlaceHolder, charsmax(szPlaceHolder))
+		replace_all(szMessage, iLen, ARG_LEVEL, szPlaceHolder)
+	}
+	#endif
+	
+	#if defined ARG_NEXT_LEVEL
+	if(g_bRankSystem && has_argument(szMessage, ARG_NEXT_LEVEL))
+	{
+		num_to_str(crxranks_get_user_next_level(id), szPlaceHolder, charsmax(szPlaceHolder))
+		replace_all(szMessage, iLen, ARG_NEXT_LEVEL, szPlaceHolder)
+	}
+	#endif
+	
+	#if defined ARG_RANK
+	if(g_bRankSystem && has_argument(szMessage, ARG_RANK))
+	{
+		crxranks_get_user_rank(id, szPlaceHolder, charsmax(szPlaceHolder))
+		replace_all(szMessage, iLen, ARG_RANK, szPlaceHolder)
+	}
+	#endif
+	
+	#if defined ARG_NEXT_RANK
+	if(g_bRankSystem && has_argument(szMessage, ARG_NEXT_RANK))
+	{
+		crxranks_get_user_next_rank(id, szPlaceHolder, charsmax(szPlaceHolder))
+		replace_all(szMessage, iLen, ARG_NEXT_RANK, szPlaceHolder)
+	}
+	#endif
+	
 	#if defined ARG_HEALTH
 	if(has_argument(szMessage, ARG_HEALTH))
 	{
@@ -823,6 +906,9 @@ get_info_type(const szText[])
 
 public plugin_natives()
 {
+	set_module_filter("module_filter")
+	set_native_filter("native_filter")
+	
 	register_library("chatmanager")
 	register_native("cm_get_admin_listen_flags", 		"_cm_get_admin_listen_flags")
 	register_native("cm_get_chat_color_by_num", 		"_cm_get_chat_color_by_num")
@@ -845,6 +931,47 @@ public plugin_natives()
 	register_native("cm_total_prefixes", 				"_cm_total_chat_colors")
 	register_native("cm_total_say_formats", 			"_cm_total_say_formats")
 	register_native("cm_update_player_data", 			"_cm_update_player_data")
+}
+
+public module_filter(const szLibrary[])
+	return equal(szLibrary, "crxranks") ? PLUGIN_HANDLED : PLUGIN_CONTINUE
+	
+public native_filter(const szNative[], id, iTrap)
+{
+	if(!iTrap)
+	{
+		#if defined ARG_CURRENT_XP
+		if(equal(szNative, "crxranks_get_user_xp"))
+			return PLUGIN_HANDLED
+		#endif
+		
+		#if defined ARG_NEXT_XP
+		if(equal(szNative, "crxranks_get_user_next_xp"))
+			return PLUGIN_HANDLED
+		#endif
+		
+		#if defined ARG_LEVEL
+		if(equal(szNative, "crxranks_get_user_level"))
+			return PLUGIN_HANDLED
+		#endif
+		
+		#if defined ARG_NEXT_LEVEL
+		if(equal(szNative, "crxranks_get_user_next_level"))
+			return PLUGIN_HANDLED
+		#endif
+		
+		#if defined ARG_RANK
+		if(equal(szNative, "crxranks_get_user_rank"))
+			return PLUGIN_HANDLED
+		#endif
+		
+		#if defined ARG_NEXT_RANK
+		if(equal(szNative, "crxranks_get_user_next_rank"))
+			return PLUGIN_HANDLED
+		#endif
+	}
+	
+	return PLUGIN_CONTINUE
 }
 
 public _cm_get_admin_listen_flags(iPlugin, iParams)
