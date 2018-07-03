@@ -3,7 +3,7 @@
 #include <cromchat>
 #include <cstrike>
 
-#define PLUGIN_VERSION "4.2"
+#define PLUGIN_VERSION "4.3"
 #define DELAY_ON_REGISTER 1.0
 #define DELAY_ON_CONNECT 1.0
 #define DELAY_ON_CHANGE 0.1
@@ -49,16 +49,12 @@
 	#include <geoip>
 #endif
 
-#if defined ARG_CURRENT_XP
+#if defined ARG_XP
 	native crxranks_get_user_xp(id)
 #endif
 
 #if defined ARG_NEXT_XP
 	native crxranks_get_user_next_xp(id)
-#endif
-
-#if defined ARG_LEVEL
-	native crxranks_get_user_level(id)
 #endif
 
 #if defined ARG_NEXT_LEVEL
@@ -72,6 +68,9 @@
 #if defined ARG_NEXT_RANK
 	native crxranks_get_user_next_rank(id, buffer[], len)
 #endif
+
+native crxranks_get_user_level(id)
+forward crxranks_user_level_updated(id, level, bool:levelup)
 
 enum
 {
@@ -92,7 +91,8 @@ enum
 	INFOTYPE_IP,
 	INFOTYPE_STEAM,
 	INFOTYPE_ANY_FLAG,
-	INFOTYPE_NO_PREFIX
+	INFOTYPE_NO_PREFIX,
+	INFOTYPE_LEVEL
 }
 
 enum
@@ -166,11 +166,7 @@ new g_eSettings[Settings],
 public plugin_init()
 {
 	register_plugin("Chat Manager", PLUGIN_VERSION, "OciXCrom")
-	register_cvar("CRXChatManager", PLUGIN_VERSION, FCVAR_SERVER|FCVAR_SPONLY|FCVAR_UNLOGGED)
-	
-	if(LibraryExists("crxranks", LibType_Library))
-		g_bRankSystem = true
-		
+	register_cvar("CRXChatManager", PLUGIN_VERSION, FCVAR_SERVER|FCVAR_SPONLY|FCVAR_UNLOGGED)		
 	set_task(DELAY_ON_REGISTER, "RegisterCommands")
 }
 
@@ -194,6 +190,10 @@ public plugin_precache()
 	g_tFormatDefinitions = TrieCreate()
 	get_configsdir(g_szConfigsName, charsmax(g_szConfigsName))
 	formatex(g_szFilename, charsmax(g_szFilename), "%s/ChatManager.ini", g_szConfigsName)
+	
+	if(LibraryExists("crxranks", LibType_Library))
+		g_bRankSystem = true
+		
 	ReadFile()
 }
 
@@ -232,6 +232,9 @@ public client_infochanged(id)
 		set_task(DELAY_ON_CHANGE, "UpdateData", id)
 	}
 }
+
+public crxranks_user_level_updated(id, iLevel)
+	set_task(DELAY_ON_CHANGE, "UpdateData", id)
 	
 public UpdateData(id)
 {
@@ -825,6 +828,12 @@ bool:invalid_info_type(const iInfoType, const szInfoType[], const iLine)
 		return true
 	}
 	
+	if(!g_bRankSystem && iInfoType == INFOTYPE_LEVEL)
+	{
+		log_config_error(iLine, "Can't use info type ^"%s^" because OciXCrom's Rank System isn't running.", szInfoType)
+		return true
+	}
+	
 	return false
 }
 
@@ -865,6 +874,11 @@ bool:meets_requirements(const id, const iInfoType, const szInfo[])
 			if(!g_ePlayerData[id][PDATA_PREFIX][0] || !g_ePlayerData[id][PDATA_PREFIX_ENABLED])
 				return true
 		}
+		case INFOTYPE_LEVEL:
+		{
+			if(crxranks_get_user_level(id) >= str_to_num(szInfo))
+				return true
+		}
 	}
 	
 	return false
@@ -899,6 +913,7 @@ get_info_type(const szText[])
 		case 'I', 'i': iInfoType = INFOTYPE_IP
 		case 'S', 's': iInfoType = INFOTYPE_STEAM
 		case 'A', 'a': iInfoType = INFOTYPE_ANY_FLAG
+		case 'L', 'l': iInfoType = INFOTYPE_LEVEL
 	}
 	
 	return iInfoType
@@ -906,9 +921,6 @@ get_info_type(const szText[])
 
 public plugin_natives()
 {
-	set_module_filter("module_filter")
-	set_native_filter("native_filter")
-	
 	register_library("chatmanager")
 	register_native("cm_get_admin_listen_flags", 		"_cm_get_admin_listen_flags")
 	register_native("cm_get_chat_color_by_num", 		"_cm_get_chat_color_by_num")
@@ -931,27 +943,23 @@ public plugin_natives()
 	register_native("cm_total_prefixes", 				"_cm_total_chat_colors")
 	register_native("cm_total_say_formats", 			"_cm_total_say_formats")
 	register_native("cm_update_player_data", 			"_cm_update_player_data")
+	set_native_filter("native_filter")
 }
-
-public module_filter(const szLibrary[])
-	return equal(szLibrary, "crxranks") ? PLUGIN_HANDLED : PLUGIN_CONTINUE
 	
 public native_filter(const szNative[], id, iTrap)
 {
 	if(!iTrap)
 	{
-		#if defined ARG_CURRENT_XP
+		if(equal(szNative, "crxranks_get_user_level") || equal(szNative, "crxranks_user_level_updated"))
+			return PLUGIN_HANDLED
+		
+		#if defined ARG_XP
 		if(equal(szNative, "crxranks_get_user_xp"))
 			return PLUGIN_HANDLED
 		#endif
 		
 		#if defined ARG_NEXT_XP
 		if(equal(szNative, "crxranks_get_user_next_xp"))
-			return PLUGIN_HANDLED
-		#endif
-		
-		#if defined ARG_LEVEL
-		if(equal(szNative, "crxranks_get_user_level"))
 			return PLUGIN_HANDLED
 		#endif
 		
