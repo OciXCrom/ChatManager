@@ -3,7 +3,7 @@
 #include <cromchat>
 #include <cstrike>
 
-#define PLUGIN_VERSION "4.3"
+#define PLUGIN_VERSION "4.3.1"
 #define DELAY_ON_REGISTER 1.0
 #define DELAY_ON_CONNECT 1.0
 #define DELAY_ON_CHANGE 0.1
@@ -11,6 +11,10 @@
 #define WRITTEN_MESSAGE_SIZE 120
 #define FULL_MESSAGE_SIZE 180
 #define ERROR_FILE "chatmanager_errors.log"
+
+#if defined replace_string
+	#define replace_all replace_string
+#endif
 
 /* 	You can comment placeholders you don't need from the lines below and that will completely deactivate them.
 	You can also activate the additional ones if you want to use them.
