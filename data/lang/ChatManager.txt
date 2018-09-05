@@ -1,4 +1,4 @@
-[en]
+[en] -- OciXCrom
 CM_MENU_TITLE = \y[\rChat Manager\y] \wUser Settings
 CM_MENU_PREFIX = Prefix
 CM_MENU_CHAT_COLOR = Chat Color
@@ -6,7 +6,7 @@ CM_MENU_CUSTOM_NAME = Custom Name
 CM_MENU_ENABLED = \y[ON]
 CM_MENU_DISABLED = \r[OFF]
 
-[mk]
+[mk] -- OciXCrom
 CM_MENU_TITLE = \y[\rChat Manager\y] \wPrilagoduvanja
 CM_MENU_PREFIX = Prefiks
 CM_MENU_CHAT_COLOR = Boja na chatot
@@ -14,7 +14,7 @@ CM_MENU_CUSTOM_NAME = Specijalno ime
 CM_MENU_ENABLED = \y[VKLUCHENO]
 CM_MENU_DISABLED = \r[ISKLUCHENO]
 
-[bg]
+[bg] -- OciXCrom
 CM_MENU_TITLE = \y[\rChat Manager\y] \wNastroiki
 CM_MENU_PREFIX = Prefiks
 CM_MENU_CHAT_COLOR = Cvqt na chata
@@ -22,10 +22,18 @@ CM_MENU_CUSTOM_NAME = Specialno ime
 CM_MENU_ENABLED = \y[VKLUUCHENO]
 CM_MENU_DISABLED = \r[IZKLIUCHENO]
 
-[bp]
+[bp] -- tarsisd2
 CM_MENU_TITLE = \y[\rGerenciador de Chat\y] \wConfiguracao do Usuario
 CM_MENU_PREFIX = Prefixo
 CM_MENU_CHAT_COLOR = Cor do Chat
 CM_MENU_CUSTOM_NAME = Nome Customizado
 CM_MENU_ENABLED = \y[ON]
 CM_MENU_DISABLED = \r[OFF]
+
+[ru] -- Gudaus
+CM_MENU_TITLE = \y[\rМенеджер чата\y] \wНастройки пользователя
+CM_MENU_PREFIX = Префикс
+CM_MENU_CHAT_COLOR = Цвет чата
+CM_MENU_CUSTOM_NAME = Кастомное имя
+CM_MENU_ENABLED = \y[Включить]
+CM_MENU_DISABLED = \r[Выключить]
