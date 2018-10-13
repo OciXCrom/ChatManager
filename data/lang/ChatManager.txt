@@ -37,3 +37,19 @@ CM_MENU_CHAT_COLOR = Цвет чата
 CM_MENU_CUSTOM_NAME = Кастомное имя
 CM_MENU_ENABLED = \y[Включить]
 CM_MENU_DISABLED = \r[Выключить]
+
+[ro] -- @MarLeo94
+CM_MENU_TITLE = \y[\rManager de chat\y] \wSetÄƒrile utilizatorului
+CM_MENU_PREFIX = Prefix
+CM_MENU_CHAT_COLOR = Culoarea chatului
+CM_MENU_CUSTOM_NAME = Nume personalizat
+CM_MENU_ENABLED = \y[Activat]
+CM_MENU_DISABLED = \r[Dezactivat]
+
+[es] -- @MarLeo94
+CM_MENU_TITLE = \y[\rGestor de chat\y] \wAjustes de usuario
+CM_MENU_PREFIX = Prefijo
+CM_MENU_CHAT_COLOR = Color de chat
+CM_MENU_CUSTOM_NAME = Nombre personalizado
+CM_MENU_ENABLED = \y[Activado]
+CM_MENU_DISABLED = \r[Desactivado] 
