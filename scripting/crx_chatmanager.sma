@@ -141,7 +141,7 @@ enum _:Settings
 	CHAT_LOG_TEAM_FORMAT[32],
 	SAY_SOUND[128],
 	SAY_TEAM_SOUND[128],
-	DATE_FORMAT[32],
+	EXPIRATION_DATE_FORMAT[32],
 	EXPIRATION_DATE_BEHAVIOR
 }
 
@@ -488,10 +488,10 @@ ReadFile()
 								precache_sound(szValue)
 								copy(g_eSettings[SAY_TEAM_SOUND], charsmax(g_eSettings[SAY_TEAM_SOUND]), szValue)
 							}
-							else if(equal(szKey, "DATE_FORMAT"))
+							else if(equal(szKey, "EXPIRATION_DATE_FORMAT"))
 							{
 								g_iToday = get_systime()
-								copy(g_eSettings[DATE_FORMAT], charsmax(g_eSettings[DATE_FORMAT]), szValue)
+								copy(g_eSettings[EXPIRATION_DATE_FORMAT], charsmax(g_eSettings[EXPIRATION_DATE_FORMAT]), szValue)
 							}
 							else if(equal(szKey, "EXPIRATION_DATE_BEHAVIOR"))
 							{
@@ -988,13 +988,13 @@ bool:is_date_expired(const szDate[], const iLine)
 		return false
 	}
 
-	if(!g_eSettings[DATE_FORMAT][0])
+	if(!g_eSettings[EXPIRATION_DATE_FORMAT][0])
 	{
-		log_config_error(iLine, "Can't use expiration dates because DATE_FORMAT is not set.")
+		log_config_error(iLine, "Can't use expiration dates because EXPIRATION_DATE_FORMAT is not set.")
 		return false
 	}
 
-	if(parse_time(szDate, g_eSettings[DATE_FORMAT]) < g_iToday)
+	if(parse_time(szDate, g_eSettings[EXPIRATION_DATE_FORMAT]) < g_iToday)
 	{
 		switch(g_eSettings[EXPIRATION_DATE_BEHAVIOR])
 		{
