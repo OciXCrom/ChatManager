@@ -61,3 +61,11 @@ CM_MENU_CHAT_COLOR = Chat Farbe
 CM_MENU_CUSTOM_NAME = Benutzerdefinierter Name
 CM_MENU_ENABLED = \y[Ein]
 CM_MENU_DISABLED = \r[Aus]
+
+[tr] -- Snake.
+CM_MENU_TITLE = \y[\rChat Yoneticisi\y] \wKullanici Ayarlari
+CM_MENU_PREFIX = Onek
+CM_MENU_CHAT_COLOR = Chat Rengi
+CM_MENU_CUSTOM_NAME = Ozel Isim
+CM_MENU_ENABLED = \y[ACIK]
+CM_MENU_DISABLED = \r[KAPALI]
