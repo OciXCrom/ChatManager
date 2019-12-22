@@ -2,8 +2,9 @@
 #include <amxmisc>
 #include <cromchat>
 #include <cstrike>
+#include <fakemeta>
 
-new const PLUGIN_VERSION[] = "4.4"
+new const PLUGIN_VERSION[] = "4.5"
 const Float:DELAY_ON_REGISTER = 1.0
 const Float:DELAY_ON_CONNECT = 1.0
 const Float:DELAY_ON_CHANGE = 0.1
@@ -177,6 +178,8 @@ new g_eSettings[Settings],
 	bool:g_bSomethingExpired,
 	g_szConfigsName[256],
 	g_szFilename[256],
+	g_fwdUserNameChanged,
+	g_fwdOnPlayerDataUpdated,
 	g_iAdminPrefixes,
 	g_iChatColors,
 	g_iNameCustomization,
@@ -188,7 +191,10 @@ public plugin_init()
 {
 	register_plugin("Chat Manager", PLUGIN_VERSION, "OciXCrom")
 	register_cvar("CRXChatManager", PLUGIN_VERSION, FCVAR_SERVER|FCVAR_SPONLY|FCVAR_UNLOGGED)
+	register_event("SayText", "OnSayTextNameChange", "a", "2=#Cstrike_Name_Change")
+
 	set_task(DELAY_ON_REGISTER, "RegisterCommands")
+	g_fwdOnPlayerDataUpdated = CreateMultiForward("cm_on_player_data_updated", ET_IGNORE, FP_CELL)
 }
 
 public plugin_end()
@@ -242,22 +248,23 @@ public client_putinserver(id)
 	set_task(DELAY_ON_CONNECT, "UpdateData", id)
 }
 
-public client_infochanged(id)
+public OnSayTextNameChange(iMsg, iDestination, iEntity)
+{
+	g_fwdUserNameChanged = register_forward(FM_ClientUserInfoChanged, "OnNameChange", 1)
+}
+
+public OnNameChange(id)
 {
 	if(!is_user_connected(id))
 	{
 		return
 	}
 
-	static szNewName[32]
-	get_user_info(id, "name", szNewName, charsmax(szNewName))
+	get_user_name(id, g_ePlayerData[id][PDATA_NAME], charsmax(g_ePlayerData[][PDATA_NAME]))
+	copy(g_ePlayerData[id][PDATA_CUSTOM_NAME], charsmax(g_ePlayerData[][PDATA_CUSTOM_NAME]), g_ePlayerData[id][PDATA_NAME])
 
-	if(!equal(szNewName, g_ePlayerData[id][PDATA_NAME]))
-	{
-		copy(g_ePlayerData[id][PDATA_NAME], charsmax(g_ePlayerData[][PDATA_NAME]), szNewName)
-		copy(g_ePlayerData[id][PDATA_CUSTOM_NAME], charsmax(g_ePlayerData[][PDATA_CUSTOM_NAME]), szNewName)
-		set_task(DELAY_ON_CHANGE, "UpdateData", id)
-	}
+	UpdateData(id)
+	unregister_forward(FM_ClientUserInfoChanged, g_fwdUserNameChanged, 1)
 }
 
 public crxranks_user_level_updated(id, iLevel)
@@ -332,6 +339,9 @@ public UpdateData(id)
 			}
 		}
 	}
+
+	new iReturn
+	ExecuteForward(g_fwdOnPlayerDataUpdated, iReturn, id)
 }
 
 ReadFile()
