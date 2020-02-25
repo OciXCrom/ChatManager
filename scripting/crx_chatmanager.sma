@@ -56,7 +56,7 @@ new const ERROR_FILE[] = "chatmanager_errors.log"
 	#include <geoip>
 #endif
 
-#if defined ARG_XP || defined ARG_CURRENT_XP
+#if defined ARG_CURRENT_XP
 	native crxranks_get_user_xp(id)
 #endif
 
@@ -1178,7 +1178,7 @@ public native_filter(const szNative[], id, iTrap)
 			return PLUGIN_HANDLED
 		}
 
-		#if defined ARG_XP
+		#if defined ARG_CURRENT_XP
 		if(equal(szNative, "crxranks_get_user_xp"))
 		{
 			return PLUGIN_HANDLED
