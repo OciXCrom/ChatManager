@@ -4,7 +4,7 @@
 #include <cstrike>
 #include <fakemeta>
 
-new const PLUGIN_VERSION[] = "4.5"
+new const PLUGIN_VERSION[] = "4.5.1"
 const Float:DELAY_ON_REGISTER = 1.0
 const Float:DELAY_ON_CONNECT = 1.0
 const Float:DELAY_ON_CHANGE = 0.1
@@ -23,32 +23,32 @@ new const ERROR_FILE[] = "chatmanager_errors.log"
 	Feel free to experiment in making your custom ones as well.
 */
 
-#define ARG_ADMIN_PREFIX 		"$admin_prefix$"
-#define ARG_DEAD_PREFIX 		"$dead_prefix$"
-#define ARG_TEAM 				"$team$"
-#define ARG_NAME 				"$name$"
-#define ARG_CUSTOM_NAME			"$custom_name$"
-#define ARG_IP 					"$ip$"
-#define ARG_STEAM 				"$steam$"
-#define ARG_USERID 				"$userid$"
-#define ARG_CHAT_COLOR 			"$chat_color$"
-#define ARG_MESSAGE 			"$message$"
-#define ARG_TIME 				"$time$"
-#define ARG_RANK 				"$rank$"
-//#define ARG_CURRENT_XP 		"$current_xp$"
-//#define ARG_NEXT_XP 			"$next_xp$"
-//#define ARG_LEVEL 			"$level$"
-//#define ARG_NEXT_LEVEL 		"$next_level$"
-//#define ARG_NEXT_RANK 		"$next_rank$"
-//#define ARG_HEALTH 			"$health$"
-//#define ARG_ARMOR 			"$armor$"
-//#define ARG_FRAGS 			"$frags$"
-//#define ARG_DEATHS 			"$deaths$"
-//#define ARG_CITY 				"$city$"
-//#define ARG_COUNTRY 			"$country$"
-//#define ARG_COUNTRY_CODE 		"$country_code$"
-//#define ARG_CONTINENT 		"$continent$"
-//#define ARG_CONTINENT_CODE 	"$continent_code$"
+#define ARG_ADMIN_PREFIX        "$admin_prefix$"
+#define ARG_DEAD_PREFIX         "$dead_prefix$"
+#define ARG_TEAM                "$team$"
+#define ARG_NAME                "$name$"
+#define ARG_CUSTOM_NAME         "$custom_name$"
+#define ARG_IP                  "$ip$"
+#define ARG_STEAM               "$steam$"
+#define ARG_USERID              "$userid$"
+#define ARG_CHAT_COLOR          "$chat_color$"
+#define ARG_MESSAGE             "$message$"
+#define ARG_TIME                "$time$"
+#define ARG_RANK                "$rank$"
+//#define ARG_CURRENT_XP        "$current_xp$"
+//#define ARG_NEXT_XP           "$next_xp$"
+//#define ARG_LEVEL             "$level$"
+//#define ARG_NEXT_LEVEL        "$next_level$"
+//#define ARG_NEXT_RANK         "$next_rank$"
+//#define ARG_HEALTH            "$health$"
+//#define ARG_ARMOR             "$armor$"
+//#define ARG_FRAGS             "$frags$"
+//#define ARG_DEATHS            "$deaths$"
+//#define ARG_CITY              "$city$"
+//#define ARG_COUNTRY           "$country$"
+//#define ARG_COUNTRY_CODE      "$country_code$"
+//#define ARG_CONTINENT         "$continent$"
+//#define ARG_CONTINENT_CODE    "$continent_code$"
 
 /*	The settings end here. Don't modify anything below this if you don't know what you're doing. */
 
@@ -56,7 +56,7 @@ new const ERROR_FILE[] = "chatmanager_errors.log"
 	#include <geoip>
 #endif
 
-#if defined ARG_XP
+#if defined ARG_XP || defined ARG_CURRENT_XP
 	native crxranks_get_user_xp(id)
 #endif
 
