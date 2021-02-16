@@ -13,6 +13,14 @@
 forward cm_on_player_data_updated(id)
 
 /**
+ * Called right after the .ini file has been read.
+ *
+ * @param firsttime     True if the file was read for the first time during the map, false otherwise.
+ * @noreturn
+ */
+forward cm_on_file_read(bool:firsttime)
+
+/**
  * Returns the flags needed to see all chats.
  *
  * @param buffer 		Buffer to store the flags in.
@@ -30,6 +38,16 @@ native cm_get_admin_listen_flags(buffer[], len)
  * @return				1 if found, 0 otherwise.
  */
 native cm_get_chat_color_by_num(num, buffer[], len)
+
+/**
+ * Retrieves a plugin setting set in the .ini file.
+ *
+ * @param key 			Setting key.
+ * @param buffer 		Buffer to store the value in.
+ * @param len 			Maximum buffer length.
+ * @return				1 if setting was found, 0 otherwise.
+ */
+native cm_get_plugin_setting(key[], buffer[], len)
 
 /**
  * Finds a prefix by a specified number.
