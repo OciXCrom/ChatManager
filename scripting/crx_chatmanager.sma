@@ -4,7 +4,7 @@
 #include <cstrike>
 #include <fakemeta>
 
-new const PLUGIN_VERSION[] = "4.5.1"
+new const PLUGIN_VERSION[] = "4.6"
 const Float:DELAY_ON_REGISTER = 1.0
 const Float:DELAY_ON_CONNECT = 1.0
 const Float:DELAY_ON_CHANGE = 0.1
@@ -173,6 +173,7 @@ new g_eSettings[Settings],
 	Array:g_aFileContents,
 	Trie:g_tBlockFirst,
 	Trie:g_tFormatDefinitions,
+	Trie:g_tSettings,
 	bool:g_bFileWasRead,
 	bool:g_bRankSystem,
 	bool:g_bSomethingExpired,
@@ -180,6 +181,7 @@ new g_eSettings[Settings],
 	g_szFilename[256],
 	g_fwdUserNameChanged,
 	g_fwdOnPlayerDataUpdated,
+	g_fwdOnFileRead,
 	g_iAdminPrefixes,
 	g_iChatColors,
 	g_iNameCustomization,
@@ -195,6 +197,7 @@ public plugin_init()
 
 	set_task(DELAY_ON_REGISTER, "RegisterCommands")
 	g_fwdOnPlayerDataUpdated = CreateMultiForward("cm_on_player_data_updated", ET_IGNORE, FP_CELL)
+	g_fwdOnFileRead = CreateMultiForward("cm_on_file_read", ET_IGNORE, FP_CELL)
 }
 
 public plugin_end()
@@ -206,6 +209,7 @@ public plugin_end()
 	ArrayDestroy(g_aFileContents)
 	TrieDestroy(g_tBlockFirst)
 	TrieDestroy(g_tFormatDefinitions)
+	TrieDestroy(g_tSettings)
 }
 
 public plugin_precache()
@@ -217,6 +221,8 @@ public plugin_precache()
 	g_aFileContents = ArrayCreate(192)
 	g_tBlockFirst = TrieCreate()
 	g_tFormatDefinitions = TrieCreate()
+	g_tSettings = TrieCreate()
+
 	get_configsdir(g_szConfigsName, charsmax(g_szConfigsName))
 	formatex(g_szFilename, charsmax(g_szFilename), "%s/ChatManager.ini", g_szConfigsName)
 
@@ -420,6 +426,8 @@ ReadFile()
 						{
 							strtok(szData, szKey, charsmax(szKey), szValue, charsmax(szValue), '=')
 							trim(szKey); trim(szValue)
+
+							TrieSetString(g_tSettings, szKey, szValue)
 
 							if(!szValue[0])
 							{
@@ -638,6 +646,9 @@ ReadFile()
 				UpdateData(iPlayers[i])
 			}
 		}
+
+		new iReturn
+		ExecuteForward(g_fwdOnFileRead, iReturn, !g_bFileWasRead)
 
 		g_bFileWasRead = true
 
@@ -1147,6 +1158,7 @@ public plugin_natives()
 	register_library("chatmanager")
 	register_native("cm_get_admin_listen_flags", 		"_cm_get_admin_listen_flags")
 	register_native("cm_get_chat_color_by_num", 		"_cm_get_chat_color_by_num")
+	register_native("cm_get_plugin_setting", 			"_cm_get_plugin_setting")
 	register_native("cm_get_prefix_by_num", 			"_cm_get_prefix_by_num")
 	register_native("cm_get_user_chat_color", 			"_cm_get_user_chat_color")
 	register_native("cm_get_user_chat_color_status", 	"_cm_get_user_chat_color_status")
@@ -1234,6 +1246,20 @@ public _cm_get_chat_color_by_num(iPlugin, iParams)
 	new szColor[32]
 	ArrayGetString(g_aChatColors, iNum, szColor, charsmax(szColor))
 	set_string(2, szColor, get_param(3))
+	return 1
+}
+
+public _cm_get_plugin_setting(iPlugin, iParams)
+{
+	new szKey[32], szValue[160]
+	get_string(1, szKey, charsmax(szKey))
+
+	if(!TrieGetString(g_tSettings, szKey, szValue, charsmax(szValue)))
+	{
+		return 0
+	}
+
+	set_string(2, szValue, get_param(3))
 	return 1
 }
 
