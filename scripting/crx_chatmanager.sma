@@ -4,7 +4,7 @@
 #include <cstrike>
 #include <fakemeta>
 
-new const PLUGIN_VERSION[] = "4.6"
+new const PLUGIN_VERSION[] = "4.6.1"
 const Float:DELAY_ON_REGISTER = 1.0
 const Float:DELAY_ON_CONNECT = 1.0
 const Float:DELAY_ON_CHANGE = 0.1
@@ -197,7 +197,6 @@ public plugin_init()
 
 	set_task(DELAY_ON_REGISTER, "RegisterCommands")
 	g_fwdOnPlayerDataUpdated = CreateMultiForward("cm_on_player_data_updated", ET_IGNORE, FP_CELL)
-	g_fwdOnFileRead = CreateMultiForward("cm_on_file_read", ET_IGNORE, FP_CELL)
 }
 
 public plugin_end()
@@ -231,6 +230,7 @@ public plugin_precache()
 		g_bRankSystem = true
 	}
 
+	g_fwdOnFileRead = CreateMultiForward("cm_on_file_read", ET_IGNORE, FP_CELL)
 	ReadFile()
 }
 
