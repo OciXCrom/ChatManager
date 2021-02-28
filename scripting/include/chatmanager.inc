@@ -25,9 +25,9 @@ forward cm_on_file_read(bool:firsttime)
  *
  * @param buffer 		Buffer to store the flags in.
  * @param len 			Maximum buffer length.
- * @noreturn
+ * @return              Flags as bitsum.
  */
-native cm_get_admin_listen_flags(buffer[], len)
+native cm_get_admin_listen_flags(buffer[] = "", len = 0)
 
 /**
  * Finds a chat color by a specified number.

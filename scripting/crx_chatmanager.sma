@@ -4,17 +4,35 @@
 #include <cstrike>
 #include <fakemeta>
 
-new const PLUGIN_VERSION[] = "4.6.1"
+new const PLUGIN_VERSION[] = "4.7"
 const Float:DELAY_ON_REGISTER = 1.0
 const Float:DELAY_ON_CONNECT = 1.0
 const Float:DELAY_ON_CHANGE = 0.1
+const MAX_VALUE_LENGTH = 32
 const PLACEHOLDER_LENGTH = 64
+const MAX_PREFIX_LENGTH = 64
 const WRITTEN_MESSAGE_SIZE = 120
 const FULL_MESSAGE_SIZE = 180
 new const ERROR_FILE[] = "chatmanager_errors.log"
 
 #if defined replace_string
 	#define replace_all replace_string
+#endif
+
+#if !defined MAX_PLAYERS
+const MAX_PLAYERS = 32
+#endif
+
+#if !defined MAX_NAME_LENGTH
+const MAX_NAME_LENGTH = 32
+#endif
+
+#if !defined MAX_IP_LENGTH
+	const MAX_IP_LENGTH = 16
+#endif
+
+#if !defined MAX_AUTHID_LENGTH
+	const MAX_AUTHID_LENGTH = 64
 #endif
 
 /*
@@ -119,53 +137,58 @@ enum
 enum _:PlayerInfo
 {
 	INFO_TYPE,
-	INFO[35],
-	DATA[32],
-	DATA2[32],
-	EXPIRATION_DATE[32]
+	INFO[MAX_AUTHID_LENGTH],
+	DATA[MAX_PREFIX_LENGTH],
+	DATA2[MAX_VALUE_LENGTH],
+	EXPIRATION_DATE[MAX_VALUE_LENGTH]
 }
 
 enum _:Settings
 {
 	ALL_CHAT,
-	ADMIN_LISTEN_FLAGS[32],
-	DEAD_PREFIX[32],
-	ALIVE_PREFIX[32],
-	SPEC_PREFIX[32],
-	TEAM_PREFIX_T[32],
-	TEAM_PREFIX_CT[32],
-	TEAM_PREFIX_SPEC[32],
-	ERROR_TEXT[32],
-	FORMAT_TIME[32],
-	CHAT_LOG_FILE[64],
-	CHAT_LOG_SAY_FORMAT[32],
-	CHAT_LOG_TEAM_FORMAT[32],
-	SAY_SOUND[128],
-	SAY_TEAM_SOUND[128],
-	EXPIRATION_DATE_FORMAT[32],
+	bool:ADMIN_LISTEN_TEAM_CHAT,
+	ADMIN_LISTEN_FLAGS[MAX_VALUE_LENGTH],
+	ADMIN_LISTEN_FLAGS_BIT,
+	GLOBAL_CHAT_FLAG,
+	GLOBAL_CHAT_TEAM,
+	DEAD_PREFIX[MAX_PREFIX_LENGTH],
+	ALIVE_PREFIX[MAX_PREFIX_LENGTH],
+	SPEC_PREFIX[MAX_PREFIX_LENGTH],
+	TEAM_PREFIX_T[MAX_PREFIX_LENGTH],
+	TEAM_PREFIX_CT[MAX_PREFIX_LENGTH],
+	TEAM_PREFIX_SPEC[MAX_PREFIX_LENGTH],
+	ERROR_TEXT[MAX_VALUE_LENGTH],
+	FORMAT_TIME[MAX_VALUE_LENGTH],
+	CHAT_LOG_FILE[MAX_RESOURCE_PATH_LENGTH],
+	CHAT_LOG_SAY_FORMAT[MAX_VALUE_LENGTH],
+	CHAT_LOG_TEAM_FORMAT[MAX_VALUE_LENGTH],
+	SAY_SOUND[MAX_RESOURCE_PATH_LENGTH],
+	SAY_TEAM_SOUND[MAX_RESOURCE_PATH_LENGTH],
+	EXPIRATION_DATE_FORMAT[MAX_VALUE_LENGTH],
 	EXPIRATION_DATE_BEHAVIOR
 }
 
 enum _:PlayerData
 {
-	PDATA_NAME[32],
-	PDATA_CUSTOM_NAME[32],
-	PDATA_IP[16],
-	PDATA_STEAM[35],
+	PDATA_NAME[MAX_NAME_LENGTH],
+	PDATA_CUSTOM_NAME[MAX_PREFIX_LENGTH],
+	PDATA_IP[MAX_IP_LENGTH],
+	PDATA_STEAM[MAX_AUTHID_LENGTH],
 	PDATA_USERID[10],
-	PDATA_PREFIX[32],
+	PDATA_PREFIX[MAX_PREFIX_LENGTH],
 	PDATA_CHAT_COLOR[6],
-	PDATA_SAY_FORMAT[32],
-	PDATA_SAY_TEAM_FORMAT[32],
+	PDATA_SAY_FORMAT[MAX_VALUE_LENGTH],
+	PDATA_SAY_TEAM_FORMAT[MAX_VALUE_LENGTH],
 	PDATA_ADMIN_FLAGS,
 	bool:PDATA_ADMIN_LISTEN,
 	bool:PDATA_PREFIX_ENABLED,
 	bool:PDATA_CHAT_COLOR_ENABLED,
-	bool:PDATA_CUSTOM_NAME_ENABLED
+	bool:PDATA_CUSTOM_NAME_ENABLED,
+	bool:PDATA_GLOBAL_CHAT
 }
 
 new g_eSettings[Settings],
-	g_ePlayerData[33][PlayerData],
+	g_ePlayerData[MAX_PLAYERS + 1][PlayerData],
 	Array:g_aAdminPrefixes,
 	Array:g_aChatColors,
 	Array:g_aNameCustomization,
@@ -177,17 +200,17 @@ new g_eSettings[Settings],
 	bool:g_bFileWasRead,
 	bool:g_bRankSystem,
 	bool:g_bSomethingExpired,
-	g_szConfigsName[256],
-	g_szFilename[256],
+	g_szFilename[PLATFORM_MAX_PATH],
 	g_fwdUserNameChanged,
-	g_fwdOnPlayerDataUpdated,
-	g_fwdOnFileRead,
 	g_iAdminPrefixes,
 	g_iChatColors,
 	g_iNameCustomization,
 	g_iSayFormats,
 	g_iFileContents = -1,
 	g_iToday
+
+new _cm_on_player_data_updated,
+	_cm_on_file_read
 
 public plugin_init()
 {
@@ -196,7 +219,7 @@ public plugin_init()
 	register_event("SayText", "OnSayTextNameChange", "a", "2=#Cstrike_Name_Change")
 
 	set_task(DELAY_ON_REGISTER, "RegisterCommands")
-	g_fwdOnPlayerDataUpdated = CreateMultiForward("cm_on_player_data_updated", ET_IGNORE, FP_CELL)
+	_cm_on_player_data_updated = CreateMultiForward("cm_on_player_data_updated", ET_IGNORE, FP_CELL)
 }
 
 public plugin_end()
@@ -222,15 +245,15 @@ public plugin_precache()
 	g_tFormatDefinitions = TrieCreate()
 	g_tSettings = TrieCreate()
 
-	get_configsdir(g_szConfigsName, charsmax(g_szConfigsName))
-	formatex(g_szFilename, charsmax(g_szFilename), "%s/ChatManager.ini", g_szConfigsName)
+	get_configsdir(g_szFilename, charsmax(g_szFilename))
+	add(g_szFilename, charsmax(g_szFilename), "/ChatManager.ini")
 
 	if(LibraryExists("crxranks", LibType_Library))
 	{
 		g_bRankSystem = true
 	}
 
-	g_fwdOnFileRead = CreateMultiForward("cm_on_file_read", ET_IGNORE, FP_CELL)
+	_cm_on_file_read = CreateMultiForward("cm_on_file_read", ET_IGNORE, FP_CELL)
 	ReadFile()
 }
 
@@ -248,9 +271,11 @@ public client_putinserver(id)
 	get_user_ip(id, g_ePlayerData[id][PDATA_IP], charsmax(g_ePlayerData[][PDATA_IP]), 1)
 	get_user_authid(id, g_ePlayerData[id][PDATA_STEAM], charsmax(g_ePlayerData[][PDATA_STEAM]))
 	num_to_str(get_user_userid(id), g_ePlayerData[id][PDATA_USERID], charsmax(g_ePlayerData[][PDATA_USERID]))
+
 	g_ePlayerData[id][PDATA_PREFIX_ENABLED] = true
 	g_ePlayerData[id][PDATA_CHAT_COLOR_ENABLED] = true
 	g_ePlayerData[id][PDATA_CUSTOM_NAME_ENABLED] = true
+
 	set_task(DELAY_ON_CONNECT, "UpdateData", id)
 }
 
@@ -281,12 +306,15 @@ public crxranks_user_level_updated(id, iLevel)
 public UpdateData(id)
 {
 	static eItem[PlayerInfo], i
+
 	g_ePlayerData[id][PDATA_PREFIX][0] = EOS
 	g_ePlayerData[id][PDATA_CHAT_COLOR][0] = EOS
 	g_ePlayerData[id][PDATA_SAY_FORMAT][0] = EOS
 	g_ePlayerData[id][PDATA_SAY_TEAM_FORMAT][0] = EOS
 	g_ePlayerData[id][PDATA_ADMIN_FLAGS] = get_user_flags(id)
-	g_ePlayerData[id][PDATA_ADMIN_LISTEN] = g_eSettings[ADMIN_LISTEN_FLAGS][0] ? (bool:(g_ePlayerData[id][PDATA_ADMIN_FLAGS] & read_flags(g_eSettings[ADMIN_LISTEN_FLAGS])) ? true : false) : false
+	g_ePlayerData[id][PDATA_ADMIN_LISTEN] = g_eSettings[ADMIN_LISTEN_FLAGS_BIT] != ADMIN_ALL ? (g_ePlayerData[id][PDATA_ADMIN_FLAGS] & g_eSettings[ADMIN_LISTEN_FLAGS_BIT] != 0 ? true : false) : false
+	g_ePlayerData[id][PDATA_GLOBAL_CHAT] = g_eSettings[GLOBAL_CHAT_FLAG] != ADMIN_ALL ? (g_ePlayerData[id][PDATA_ADMIN_FLAGS] & g_eSettings[GLOBAL_CHAT_FLAG] != 0 ? true : false) : false
+
 	copy(g_ePlayerData[id][PDATA_CUSTOM_NAME], charsmax(g_ePlayerData[][PDATA_CUSTOM_NAME]), g_ePlayerData[id][PDATA_NAME])
 
 	if(g_iAdminPrefixes)
@@ -347,7 +375,7 @@ public UpdateData(id)
 	}
 
 	new iReturn
-	ExecuteForward(g_fwdOnPlayerDataUpdated, iReturn, id)
+	ExecuteForward(_cm_on_player_data_updated, iReturn, id)
 }
 
 ReadFile()
@@ -373,7 +401,7 @@ ReadFile()
 
 	if(iFilePointer)
 	{
-		new szData[192], szValue[160], szKey[32], eItem[PlayerInfo], iSection = SECTION_NONE, iChatLogSayLine, iChatLogTeamLine, iSize, iLine
+		new szData[192], szValue[160], szKey[MAX_VALUE_LENGTH], eItem[PlayerInfo], iSection = SECTION_NONE, iChatLogSayLine, iChatLogTeamLine, iSize, iLine
 
 		while(!feof(iFilePointer))
 		{
@@ -421,7 +449,10 @@ ReadFile()
 				{
 					switch(iSection)
 					{
-						case SECTION_NONE: log_config_error(iLine, "Data is not in any section: %s", szData)
+						case SECTION_NONE:
+						{
+							log_config_error(iLine, "Data is not in any section: %s", szData)
+						}
 						case SECTION_MAIN_SETTINGS:
 						{
 							strtok(szData, szKey, charsmax(szKey), szValue, charsmax(szValue), '=')
@@ -438,9 +469,22 @@ ReadFile()
 							{
 								g_eSettings[ALL_CHAT] = clamp(str_to_num(szValue), ALLCHAT_NONE, ALLCHAT_SEE_TEAM)
 							}
+							else if(equal(szKey, "ADMIN_LISTEN_TEAM_CHAT"))
+							{
+								g_eSettings[ADMIN_LISTEN_TEAM_CHAT] = _:clamp(str_to_num(szValue), false, true)
+							}
 							else if(equal(szKey, "ADMIN_LISTEN_FLAGS"))
 							{
 								copy(g_eSettings[ADMIN_LISTEN_FLAGS], charsmax(g_eSettings[ADMIN_LISTEN_FLAGS]), szValue)
+								g_eSettings[ADMIN_LISTEN_FLAGS_BIT] = read_flags(szValue)
+							}
+							else if(equal(szKey, "GLOBAL_CHAT_FLAG"))
+							{
+								g_eSettings[GLOBAL_CHAT_FLAG] = read_flags(szValue)
+							}
+							else if(equal(szKey, "GLOBAL_CHAT_TEAM"))
+							{
+								g_eSettings[GLOBAL_CHAT_TEAM] = _:clamp(str_to_num(szValue), false, true)
 							}
 							else if(equal(szKey, "BLOCK_FIRST_SYMBOLS"))
 							{
@@ -485,6 +529,7 @@ ReadFile()
 							else if(equal(szKey, "CHAT_LOG_FILE"))
 							{
 								copy(g_eSettings[CHAT_LOG_FILE], charsmax(g_eSettings[CHAT_LOG_FILE]), szValue)
+								format_time(g_eSettings[CHAT_LOG_FILE], charsmax(g_eSettings[CHAT_LOG_FILE]), g_eSettings[CHAT_LOG_FILE])
 							}
 							else if(equal(szKey, "CHAT_LOG_SAY_FORMAT"))
 							{
@@ -498,12 +543,12 @@ ReadFile()
 							}
 							else if(equal(szKey, "SAY_SOUND") && !g_bFileWasRead)
 							{
-								precache_sound(szValue)
+								precache_generic(szValue)
 								copy(g_eSettings[SAY_SOUND], charsmax(g_eSettings[SAY_SOUND]), szValue)
 							}
 							else if(equal(szKey, "SAY_TEAM_SOUND") && !g_bFileWasRead)
 							{
-								precache_sound(szValue)
+								precache_generic(szValue)
 								copy(g_eSettings[SAY_TEAM_SOUND], charsmax(g_eSettings[SAY_TEAM_SOUND]), szValue)
 							}
 							else if(equal(szKey, "EXPIRATION_DATE_FORMAT"))
@@ -638,7 +683,7 @@ ReadFile()
 
 		if(g_bFileWasRead)
 		{
-			new iPlayers[32], iPnum
+			new iPlayers[MAX_PLAYERS], iPnum
 			get_players(iPlayers, iPnum)
 
 			for(new i; i < iPnum; i++)
@@ -648,7 +693,7 @@ ReadFile()
 		}
 
 		new iReturn
-		ExecuteForward(g_fwdOnFileRead, iReturn, !g_bFileWasRead)
+		ExecuteForward(_cm_on_file_read, iReturn, !g_bFileWasRead)
 
 		g_bFileWasRead = true
 
@@ -708,22 +753,19 @@ public Hook_Say(id)
 		return PLUGIN_HANDLED
 	}
 
-	static iFlags
-	iFlags = get_user_flags(id)
-
-	if(g_ePlayerData[id][PDATA_ADMIN_FLAGS] != iFlags)
+	// Until we get a client_flags_updated() forward...
+	if(g_ePlayerData[id][PDATA_ADMIN_FLAGS] != get_user_flags(id))
 	{
 		UpdateData(id)
-		g_ePlayerData[id][PDATA_ADMIN_FLAGS] = iFlags
 	}
 
 	static szCommand[5]
 	read_argv(0, szCommand, charsmax(szCommand))
 
-	static szMessage[FULL_MESSAGE_SIZE + 32], szSound[128], iPlayers[32], iPnum, bool:bTeam, iAlive, CsTeams:iTeam
-	bTeam = szCommand[3] == '_'
-	iAlive = is_user_alive(id)
-	iTeam = cs_get_user_team(id)
+	static szMessage[FULL_MESSAGE_SIZE + 32], szSound[128], iPlayers[32]
+	new bool:bTeam = szCommand[3] == '_'
+	new CsTeams:iTeam = cs_get_user_team(id)
+	new iAlive = is_user_alive(id)
 
 	if(bTeam && g_eSettings[SAY_TEAM_SOUND][0])
 	{
@@ -739,33 +781,48 @@ public Hook_Say(id)
 	}
 
 	apply_replacements(g_ePlayerData[id][bTeam ? PDATA_SAY_TEAM_FORMAT : PDATA_SAY_FORMAT], id, iAlive, iTeam, szArgs, szMessage, charsmax(szMessage))
+
+	new iPnum
 	get_players(iPlayers, iPnum, "ch")
 
-	if(g_eSettings[ALL_CHAT] == ALLCHAT_SEE_TEAM)
+	if(g_eSettings[ALL_CHAT] == ALLCHAT_SEE_TEAM || (g_ePlayerData[id][PDATA_GLOBAL_CHAT] && !(bTeam && !g_eSettings[GLOBAL_CHAT_TEAM])))
 	{
-		CC_SendMatched(0, id, szMessage)
-
-		if(szSound[0])
-		{
-			client_cmd(0, "spk ^"%s^"", szSound)
-		}
+		send_chat_message(0, id, szMessage, szSound)
 	}
 	else
 	{
-		static iPlayer, i
-
-		for(i = 0; i < iPnum; i++)
+		for(new bool:bSend, CsTeams:iPlayerTeam, iPlayer, i; i < iPnum; i++)
 		{
+			bSend = false
 			iPlayer = iPlayers[i]
 
-			if(g_ePlayerData[iPlayer][PDATA_ADMIN_LISTEN] || (bTeam && iTeam == cs_get_user_team(iPlayer) && iAlive == is_user_alive(iPlayer)) || (!bTeam && (g_eSettings[ALL_CHAT] == 1 || iAlive == is_user_alive(iPlayer))))
-			{
-				CC_SendMatched(iPlayer, id, szMessage)
+			iPlayerTeam = cs_get_user_team(iPlayer)
 
-				if(szSound[0])
+			if(g_ePlayerData[iPlayer][PDATA_ADMIN_LISTEN])
+			{
+				if(!(!g_eSettings[ADMIN_LISTEN_TEAM_CHAT] && bTeam && iTeam != iPlayerTeam))
 				{
-					client_cmd(iPlayer, "spk ^"%s^"", szSound)
+					bSend = true
 				}
+			}
+			else if(bTeam)
+			{
+				if(iTeam == iPlayerTeam && (g_eSettings[ALL_CHAT] == ALLCHAT_NO_TEAM || iAlive == is_user_alive(iPlayer)))
+				{
+					bSend = true
+				}
+			}
+			else
+			{
+				if(g_eSettings[ALL_CHAT] == ALLCHAT_NO_TEAM || iAlive == is_user_alive(iPlayer))
+				{
+					bSend = true
+				}
+			}
+
+			if(bSend)
+			{
+				send_chat_message(iPlayer, id, szMessage, szSound)
 			}
 		}
 	}
@@ -773,13 +830,23 @@ public Hook_Say(id)
 	if(g_eSettings[CHAT_LOG_FILE][0])
 	{
 		apply_replacements(g_eSettings[bTeam ? CHAT_LOG_TEAM_FORMAT : CHAT_LOG_SAY_FORMAT], id, iAlive, iTeam, szArgs, szMessage, charsmax(szMessage))
-		log_to_file(g_eSettings[CHAT_LOG_FILE], szMessage)
+		log_to_file(g_eSettings[CHAT_LOG_FILE], szMessage, szSound)
 	}
 
 	return PLUGIN_HANDLED
 }
 
-apply_replacements(const szFormat[], const id, const iAlive, const CsTeams:iTeam, const szArgs[], szMessage[], const iLen)
+send_chat_message(iIdTo, iIdFrom, const szMessage[], const szSound[])
+{
+	CC_SendMatched(iIdTo, iIdFrom, szMessage)
+
+	if(szSound[0])
+	{
+		client_cmd(iIdTo, "spk ^"%s^"", szSound)
+	}
+}
+
+apply_replacements(const szFormat[], id, iAlive, CsTeams:iTeam, const szArgs[], szMessage[], iLen)
 {
 	static szPlaceHolder[PLACEHOLDER_LENGTH]
 	TrieGetString(g_tFormatDefinitions, szFormat, szMessage, iLen)
@@ -1156,6 +1223,8 @@ get_info_type(const szText[])
 public plugin_natives()
 {
 	register_library("chatmanager")
+	set_native_filter("native_filter")
+
 	register_native("cm_get_admin_listen_flags", 		"_cm_get_admin_listen_flags")
 	register_native("cm_get_chat_color_by_num", 		"_cm_get_chat_color_by_num")
 	register_native("cm_get_plugin_setting", 			"_cm_get_plugin_setting")
@@ -1178,7 +1247,6 @@ public plugin_natives()
 	register_native("cm_total_prefixes", 				"_cm_total_chat_colors")
 	register_native("cm_total_say_formats", 			"_cm_total_say_formats")
 	register_native("cm_update_player_data", 			"_cm_update_player_data")
-	set_native_filter("native_filter")
 }
 
 public native_filter(const szNative[], id, iTrap)
@@ -1232,6 +1300,7 @@ public native_filter(const szNative[], id, iTrap)
 public _cm_get_admin_listen_flags(iPlugin, iParams)
 {
 	set_string(1, g_eSettings[ADMIN_LISTEN_FLAGS], get_param(2))
+	return g_eSettings[ADMIN_LISTEN_FLAGS_BIT]
 }
 
 public _cm_get_chat_color_by_num(iPlugin, iParams)
