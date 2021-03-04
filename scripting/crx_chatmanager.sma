@@ -4,7 +4,7 @@
 #include <cstrike>
 #include <fakemeta>
 
-new const PLUGIN_VERSION[] = "4.7"
+new const PLUGIN_VERSION[] = "4.7.1"
 const Float:DELAY_ON_REGISTER = 1.0
 const Float:DELAY_ON_CONNECT = 1.0
 const Float:DELAY_ON_CHANGE = 0.1
