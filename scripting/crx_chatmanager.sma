@@ -750,7 +750,7 @@ public Hook_Say(id)
 
 	if(!szArgs[0] || TrieKeyExists(g_tBlockFirst, szFirstChar))
 	{
-		return PLUGIN_HANDLED
+		return PLUGIN_HANDLED_MAIN
 	}
 
 	// Until we get a client_flags_updated() forward...
@@ -833,7 +833,7 @@ public Hook_Say(id)
 		log_to_file(g_eSettings[CHAT_LOG_FILE], szMessage, szSound)
 	}
 
-	return PLUGIN_HANDLED
+	return PLUGIN_HANDLED_MAIN
 }
 
 send_chat_message(iIdTo, iIdFrom, const szMessage[], const szSound[])
