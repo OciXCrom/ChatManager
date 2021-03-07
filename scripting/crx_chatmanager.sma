@@ -4,7 +4,7 @@
 #include <cstrike>
 #include <fakemeta>
 
-new const PLUGIN_VERSION[] = "4.7.1"
+new const PLUGIN_VERSION[] = "4.7.2"
 const Float:DELAY_ON_REGISTER = 1.0
 const Float:DELAY_ON_CONNECT = 1.0
 const Float:DELAY_ON_CHANGE = 0.1
@@ -315,6 +315,7 @@ public UpdateData(id)
 	g_ePlayerData[id][PDATA_ADMIN_LISTEN] = g_eSettings[ADMIN_LISTEN_FLAGS_BIT] != ADMIN_ALL ? (g_ePlayerData[id][PDATA_ADMIN_FLAGS] & g_eSettings[ADMIN_LISTEN_FLAGS_BIT] != 0 ? true : false) : false
 	g_ePlayerData[id][PDATA_GLOBAL_CHAT] = g_eSettings[GLOBAL_CHAT_FLAG] != ADMIN_ALL ? (g_ePlayerData[id][PDATA_ADMIN_FLAGS] & g_eSettings[GLOBAL_CHAT_FLAG] != 0 ? true : false) : false
 
+	get_user_name(id, g_ePlayerData[id][PDATA_NAME], charsmax(g_ePlayerData[][PDATA_NAME]))
 	copy(g_ePlayerData[id][PDATA_CUSTOM_NAME], charsmax(g_ePlayerData[][PDATA_CUSTOM_NAME]), g_ePlayerData[id][PDATA_NAME])
 
 	if(g_iAdminPrefixes)
