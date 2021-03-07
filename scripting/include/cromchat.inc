@@ -4,6 +4,9 @@
 
 #define _cromchat_included
 
+#include <amxmodx>
+#include <fakemeta>
+
 #if !defined CC_DONT_OVERWRITE_183_PRINT
 	#define client_print_color CC_SendMatched
 	#define print_team_default CC_COLOR_TEAM
@@ -28,14 +31,27 @@
 	#define show_activity_key CC_ShowActivityKey
 #endif
 
-#define CC_VERSION 					2.1
-#define CC_MAX_TEAM_SIZE 			10
-#define CC_MAX_ACT_PREFIX_SIZE 		10
-#define CC_MAX_PLAYERS 				32
-#define CC_MAX_PREFIX_SIZE 			64
-#define CC_MAX_MESSAGE_SIZE 		188
-#define CC_FILTERING_FLAGS			"ch"
-#define CromChat 					CC_SendMessage
+#if !defined CC_DONT_OVERWRITE_WPMG
+	#define PrintChatColor CC_SendMatched
+	#define PRINT_COLOR_GREY CC_COLOR_GREY
+	#define PRINT_COLOR_RED CC_COLOR_RED
+	#define PRINT_COLOR_BLUE CC_COLOR_BLUE
+	#define PRINT_COLOR_PLAYERTEAM CC_COLOR_TEAM
+#endif
+
+#if !defined CC_DONT_OVERWRITE_CHATPRINT
+	#define ChatPrint CC_SendMessage
+#endif
+
+#define CromChat CC_SendMessage
+
+const Float:CC_VERSION            = 3.0
+const CC_MAX_ACT_PREFIX_SIZE      = 10
+const CC_MAX_PLAYERS              = 32
+const CC_MAX_PREFIX_SIZE          = 64
+const CC_MAX_MESSAGE_SIZE         = 188
+new const CC_LIBRARY_NAME[]       = "cromchat"
+static const CC_FILTERING_FLAGS[] = "ch"
 
 #if !defined CC_COLORS_TYPE
 	#define CC_COLORS_TYPE CC_COLORS_CROMCHAT
@@ -53,14 +69,11 @@
 	#define CC_ACTIVITY_PREFIX_ADMIN "ADMIN"
 #endif
 
-enum
-{
-	CC_COLOR_TEAM 		= 0,
-	CC_COLOR_GREY 		= -1,
-	CC_COLOR_WHITE 		= -1,
-	CC_COLOR_BLUE 		= -2,
-	CC_COLOR_RED 		= -3
-}
+const CC_COLOR_TEAM  = CC_MAX_PLAYERS + 1
+const CC_COLOR_GREY  = CC_MAX_PLAYERS + 2
+const CC_COLOR_WHITE = CC_MAX_PLAYERS + 2
+const CC_COLOR_BLUE  = CC_MAX_PLAYERS + 3
+const CC_COLOR_RED   = CC_MAX_PLAYERS + 4
 
 enum
 {
@@ -72,260 +85,268 @@ enum
 	CC_COLORS_CUSTOM
 }
 
-#define CC_SYM_MENU_YELLOW 			"\y"
-#define CC_SYM_MENU_WHITE 			"\w"
-#define CC_SYM_MENU_GREY 			"\d"
-#define CC_SYM_MENU_RIGHT 			"\R"
+#define CC_SYM_MENU_YELLOW          "\y"
+#define CC_SYM_MENU_WHITE           "\w"
+#define CC_SYM_MENU_GREY            "\d"
+#define CC_SYM_MENU_RIGHT           "\R"
 
-#define CC_SYM_CHAT_DEF_NORMAL 		"^x01"
-#define CC_SYM_CHAT_DEF_TEAM 		"^x03"
-#define CC_SYM_CHAT_DEF_GREEN 		"^x04"
+#define CC_SYM_CHAT_DEF_NORMAL      "^x01"
+#define CC_SYM_CHAT_DEF_TEAM        "^x03"
+#define CC_SYM_CHAT_DEF_GREEN       "^x04"
 
-#define CC_SYM_TEAM_T 				"TERRORIST"
-#define CC_SYM_TEAM_CT 				"CT"
-#define CC_SYM_TEAM_SPEC 			"SPECTATOR"
+static bool:CC_FIRST_TIME_ACTIVITY = true, bool:CC_IS_CSTRIKE, bool:CC_COLOR_FORCE
+static CC_ACTIVITY_POINTER, CC_COLOR_PLAYER_INDEX
 
-#define CC_ACTIVITY_CVAR 			"amx_show_activity"
-#define CC_ACTIVITY_CVAR_DEF 		"2"
-#define CC_ACTIVITY_CVAR_TYPE		FCVAR_PROTECTED
-
-new CC_PREFIX[CC_MAX_PREFIX_SIZE], bool:CC_FIRST_TIME = true, bool:CC_FIRST_TIME_ACTIVITY = true, CC_ACTIVITY_POINTER, CC_MSG_SAYTEXT, CC_MSG_TEAMINFO
-new const CC_MENU_COLORS[][] = { CC_SYM_MENU_YELLOW, CC_SYM_MENU_WHITE, CC_SYM_MENU_GREY, CC_SYM_MENU_RIGHT }
+new CC_PREFIX[CC_MAX_PREFIX_SIZE]
 
 #if CC_COLORS_TYPE == CC_COLORS_CUSTOM
 	#if !defined CC_SYM_CHAT_NORMAL
-		#define CC_SYM_CHAT_NORMAL 		"&x01"
+		#define CC_SYM_CHAT_NORMAL "&x01"
 	#endif
 	
 	#if !defined CC_SYM_CHAT_TEAM
-		#define CC_SYM_CHAT_TEAM 		"&x03"
+		#define CC_SYM_CHAT_TEAM   "&x03"
 	#endif
 	
 	#if !defined CC_SYM_CHAT_GREEN
-		#define CC_SYM_CHAT_GREEN		"&x04"
+		#define CC_SYM_CHAT_GREEN  "&x04"
 	#endif
 	
 	#if !defined CC_SYM_CHAT_WHITE
-		#define CC_SYM_CHAT_WHITE		"&x05"
+		#define CC_SYM_CHAT_WHITE  "&x05"
 	#endif
 	
 	#if !defined CC_SYM_CHAT_BLUE
-		#define CC_SYM_CHAT_BLUE 		"&x06"
+		#define CC_SYM_CHAT_BLUE   "&x06"
 	#endif
 	
 	#if !defined CC_SYM_CHAT_RED
-		#define CC_SYM_CHAT_RED			"&x07"
+		#define CC_SYM_CHAT_RED    "&x07"
 	#endif
 	
 	#if !defined CC_SYM_CHAT_NOPREF
-		#define CC_SYM_CHAT_NOPREF		"&x00"
+		#define CC_SYM_CHAT_NOPREF "&x00"
 	#endif
 #else	
 	#if CC_COLORS_TYPE == CC_COLORS_CROMCHAT
-		#define CC_SYM_CHAT_NORMAL 		"&x01"
-		#define CC_SYM_CHAT_TEAM 		"&x03"
-		#define CC_SYM_CHAT_GREEN 		"&x04"
-		#define CC_SYM_CHAT_WHITE 		"&x05"
-		#define CC_SYM_CHAT_BLUE 		"&x06"
-		#define CC_SYM_CHAT_RED 		"&x07"
-		#define CC_SYM_CHAT_NOPREF 		"&x00"
+		#define CC_SYM_CHAT_NORMAL "&x01"
+		#define CC_SYM_CHAT_TEAM   "&x03"
+		#define CC_SYM_CHAT_GREEN  "&x04"
+		#define CC_SYM_CHAT_WHITE  "&x05"
+		#define CC_SYM_CHAT_BLUE   "&x06"
+		#define CC_SYM_CHAT_RED    "&x07"
+		#define CC_SYM_CHAT_NOPREF "&x00"
 	#endif
 	
 	#if CC_COLORS_TYPE == CC_COLORS_SHORT
-		#define CC_SYM_CHAT_NORMAL 		"!n"
-		#define CC_SYM_CHAT_TEAM 		"!t"
-		#define CC_SYM_CHAT_GREEN 		"!g"
-		#define CC_SYM_CHAT_WHITE 		"!w"
-		#define CC_SYM_CHAT_BLUE 		"!b"
-		#define CC_SYM_CHAT_RED 		"!r"
-		#define CC_SYM_CHAT_NOPREF 		"!p"
+		#define CC_SYM_CHAT_NORMAL "!n"
+		#define CC_SYM_CHAT_TEAM   "!t"
+		#define CC_SYM_CHAT_GREEN  "!g"
+		#define CC_SYM_CHAT_WHITE  "!w"
+		#define CC_SYM_CHAT_BLUE   "!b"
+		#define CC_SYM_CHAT_RED    "!r"
+		#define CC_SYM_CHAT_NOPREF "!p"
 	#endif
 	
 	#if CC_COLORS_TYPE == CC_COLORS_NAMED
-		#define CC_SYM_CHAT_NORMAL 		"{normal}"
-		#define CC_SYM_CHAT_TEAM 		"{team}"
-		#define CC_SYM_CHAT_GREEN 		"{green}"
-		#define CC_SYM_CHAT_WHITE 		"{white}"
-		#define CC_SYM_CHAT_BLUE 		"{blue}"
-		#define CC_SYM_CHAT_RED 		"{red}"
-		#define CC_SYM_CHAT_NOPREF 		"{nopref}"
+		#define CC_SYM_CHAT_NORMAL "{normal}"
+		#define CC_SYM_CHAT_TEAM   "{team}"
+		#define CC_SYM_CHAT_GREEN  "{green}"
+		#define CC_SYM_CHAT_WHITE  "{white}"
+		#define CC_SYM_CHAT_BLUE   "{blue}"
+		#define CC_SYM_CHAT_RED    "{red}"
+		#define CC_SYM_CHAT_NOPREF "{nopref}"
 	#endif
 	
 	#if CC_COLORS_TYPE == CC_COLORS_NAMED_SHORT
-		#define CC_SYM_CHAT_NORMAL 		"{n}"
-		#define CC_SYM_CHAT_TEAM 		"{t}"
-		#define CC_SYM_CHAT_GREEN 		"{g}"
-		#define CC_SYM_CHAT_WHITE 		"{w}"
-		#define CC_SYM_CHAT_BLUE 		"{b}"
-		#define CC_SYM_CHAT_RED 		"{r}"
-		#define CC_SYM_CHAT_NOPREF 		"{p}"
+		#define CC_SYM_CHAT_NORMAL "{n}"
+		#define CC_SYM_CHAT_TEAM   "{t}"
+		#define CC_SYM_CHAT_GREEN  "{g}"
+		#define CC_SYM_CHAT_WHITE  "{w}"
+		#define CC_SYM_CHAT_BLUE   "{b}"
+		#define CC_SYM_CHAT_RED    "{r}"
+		#define CC_SYM_CHAT_NOPREF "{p}"
 	#endif
 	
 	#if CC_COLORS_TYPE == CC_COLORS_STANDARD
-		#define CC_SYM_CHAT_NORMAL 		"^1"
-		#define CC_SYM_CHAT_TEAM 		"^3"
-		#define CC_SYM_CHAT_GREEN 		"^4"
-		#define CC_SYM_CHAT_WHITE 		"^5"
-		#define CC_SYM_CHAT_BLUE 		"^6"
-		#define CC_SYM_CHAT_RED 		"^7"
-		#define CC_SYM_CHAT_NOPREF 		"^0"
+		#define CC_SYM_CHAT_NORMAL "^1"
+		#define CC_SYM_CHAT_TEAM   "^3"
+		#define CC_SYM_CHAT_GREEN  "^4"
+		#define CC_SYM_CHAT_WHITE  "^5"
+		#define CC_SYM_CHAT_BLUE   "^6"
+		#define CC_SYM_CHAT_RED    "^7"
+		#define CC_SYM_CHAT_NOPREF "^0"
 	#endif
 #endif
 
-new const CC_REPLACE_COLORS[][] = { CC_SYM_CHAT_GREEN, CC_SYM_CHAT_DEF_GREEN, CC_SYM_CHAT_TEAM, CC_SYM_CHAT_DEF_TEAM, CC_SYM_CHAT_NORMAL, CC_SYM_CHAT_DEF_NORMAL }
-new const CC_PLUS_COLORS[][] = { CC_SYM_CHAT_RED, CC_SYM_TEAM_T, CC_SYM_CHAT_BLUE, CC_SYM_TEAM_CT, CC_SYM_CHAT_WHITE, CC_SYM_TEAM_SPEC }
-new const CC_COLORS_LIST[][] = { CC_SYM_CHAT_RED, CC_SYM_CHAT_BLUE, CC_SYM_CHAT_WHITE, CC_SYM_CHAT_GREEN, CC_SYM_CHAT_TEAM, CC_SYM_CHAT_NORMAL, CC_SYM_CHAT_NOPREF }
-new const CC_NO_PREFIX[] = CC_SYM_CHAT_NOPREF
+static const CC_NO_PREFIX[]         =   CC_SYM_CHAT_NOPREF
+static const CC_MENU_COLORS[][]     = { CC_SYM_MENU_YELLOW, CC_SYM_MENU_WHITE, CC_SYM_MENU_GREY, CC_SYM_MENU_RIGHT }
+static const CC_REPLACE_COLORS[][]  = { CC_SYM_CHAT_GREEN, CC_SYM_CHAT_DEF_GREEN, CC_SYM_CHAT_TEAM, CC_SYM_CHAT_DEF_TEAM, CC_SYM_CHAT_NORMAL, CC_SYM_CHAT_DEF_NORMAL }
+static const CC_PLUS_COLORS_STR[][] = { CC_SYM_CHAT_RED, CC_SYM_CHAT_BLUE, CC_SYM_CHAT_WHITE }
+static const CC_PLUS_COLORS_INT[]   = { CC_COLOR_RED, CC_COLOR_BLUE, CC_COLOR_WHITE }
+static const CC_COLORS_LIST[][]     = { CC_SYM_CHAT_RED, CC_SYM_CHAT_BLUE, CC_SYM_CHAT_WHITE, CC_SYM_CHAT_GREEN, CC_SYM_CHAT_TEAM, CC_SYM_CHAT_NORMAL, CC_SYM_CHAT_NOPREF }
 
 /**
  * Sends a colored chat message.
  *
- * @param id     	Client index (use 0 to send to all players)
- * @param szInput	The message to send
- * @param ... 		Variable number of formatting parameters
+ * @param id        Client index (use 0 to send to all players)
+ * @param input     The message to send
+ * @param ...       Variable number of formatting parameters
  *
  * @return          Length of the printed message
  */
-stock CC_SendMessage(const id, const szInput[], any:...)
+stock CC_SendMessage(id, const input[], any:...)
 {
+	_CC_ModInit()
 	static iPlayers[CC_MAX_PLAYERS], iPnum
 	
 	if(id)
 	{
 		if(!is_user_connected(id))
+		{
 			return 0
+		}
 	}
 	else
 	{
 		get_players(iPlayers, iPnum, CC_FILTERING_FLAGS)
 		
 		if(!iPnum)
+		{
 			return 0
+		}
 	}
 	
-	static szMessage[CC_MAX_MESSAGE_SIZE], szTeam[CC_MAX_TEAM_SIZE], bool:bNoPrefix, i
-	vformat(szMessage[1], charsmax(szMessage), szInput, 3)
+	static szMessage[CC_MAX_MESSAGE_SIZE], bool:bNoPrefix, i
+	vformat(szMessage[1], charsmax(szMessage), input, 3)
 	szMessage[0] = 0x01
-	szTeam[0] = EOS
 	
 	bNoPrefix = bool:(equal(szMessage[1], CC_NO_PREFIX, charsmax(CC_NO_PREFIX)) || equal(szMessage[2], CC_NO_PREFIX, charsmax(CC_NO_PREFIX)))
 	
 	if(bNoPrefix)
+	{
 		replace(szMessage, charsmax(szMessage), CC_NO_PREFIX, "")
+	}
 	else if(CC_PREFIX[0])
-		format(szMessage, charsmax(szMessage), "%s%s %s%s", CC_SYM_CHAT_DEF_NORMAL, CC_PREFIX, CC_SYM_CHAT_DEF_NORMAL, szMessage)
+	{
+		if(CC_IS_CSTRIKE)
+		{
+			format(szMessage, charsmax(szMessage), "%s%s %s%s", CC_SYM_CHAT_DEF_NORMAL, CC_PREFIX, CC_SYM_CHAT_DEF_NORMAL, szMessage)
+		}
+		else
+		{
+			format(szMessage, charsmax(szMessage), "%s%s %s", CC_SYM_CHAT_DEF_NORMAL, CC_PREFIX, szMessage)
+		}
+	}
 	
 	for(i = 0; i < sizeof(CC_REPLACE_COLORS) - 1; i += 2)
-		replace_all(szMessage, charsmax(szMessage), CC_REPLACE_COLORS[i], CC_REPLACE_COLORS[i + 1])
-		
-	for(i = 0; i < sizeof(CC_PLUS_COLORS) - 1; i += 2)
 	{
-		if(contain(szMessage, CC_PLUS_COLORS[i]) != -1)
+		if(CC_IS_CSTRIKE)
 		{
-			copy(szTeam, charsmax(szTeam), CC_PLUS_COLORS[i + 1])
+			replace_all(szMessage, charsmax(szMessage), CC_REPLACE_COLORS[i], CC_REPLACE_COLORS[i + 1])
+		}
+		else
+		{
+			replace_all(szMessage, charsmax(szMessage), CC_REPLACE_COLORS[i], "")
+		}
+	}
+		
+	for(i = 0; i < sizeof(CC_PLUS_COLORS_STR); i++)
+	{
+		if(contain(szMessage, CC_PLUS_COLORS_STR[i]) != -1)
+		{
+			if(!CC_COLOR_FORCE)
+			{
+				CC_COLOR_PLAYER_INDEX = CC_PLUS_COLORS_INT[i]
+			}
+
+			for(i = 0; i < 3; i++)
+			{
+				if(CC_IS_CSTRIKE)
+				{
+					replace_all(szMessage, charsmax(szMessage), CC_COLORS_LIST[i], CC_SYM_CHAT_DEF_TEAM)
+				}
+				else
+				{
+					replace_all(szMessage, charsmax(szMessage), CC_COLORS_LIST[i], "")
+				}
+			}
+
 			break
 		}
 	}
 	
-	if(szTeam[0])
-	{
-		for(i = 0; i < 3; i++)
-			replace_all(szMessage, charsmax(szMessage), CC_COLORS_LIST[i], CC_SYM_CHAT_DEF_TEAM)
-	}
-	
 	if(id)
-		_CC_WriteMessage(id, szMessage, szTeam)
+	{
+		_CC_WriteMessage(id, szMessage)
+	}
 	else
 	{
 		for(i = 0; i < iPnum; i++)
-			_CC_WriteMessage(iPlayers[i], szMessage, szTeam)
+		{
+			_CC_WriteMessage(iPlayers[i], szMessage)
+		}
 	}
-	
+
+	CC_COLOR_FORCE = false
+	CC_COLOR_PLAYER_INDEX = 0
+
 	return strlen(szMessage)
 }
 
 /**
  * Sends a colored chat message matching a specific player's color.
  *
- * @note You can use the iPlayer argument to set a specific color instead of matching
+ * @note You can use the "player" argument to set a specific color instead of matching
  *       it automtaically. To do this, you can use one of the following color arguments:
  *		 CC_COLOR_TEAM, CC_COLOR_GREY (or CC_COLOR_WHITE), CC_COLOR_BLUE, CC_COLOR_RED.
  *
- * @param id     	Client index (use 0 to send to all players)
- * @param iPlayer   Matching player's index
- * @param szInput	The message to send
- * @param ... 		Variable number of formatting parameters
+ * @param id        Client index (use 0 to send to all players)
+ * @param player    Matching player's index
+ * @param input     The message to send
+ * @param ...       Variable number of formatting parameters
  *
  * @return          Length of the printed message
  */
-stock CC_SendMatched(const id, const iPlayer, const szInput[], any:...)
+stock CC_SendMatched(id, player, const input[], any:...)
 {
-	static szMessage[CC_MAX_MESSAGE_SIZE], bool:bPlus, i
-	vformat(szMessage[1], charsmax(szMessage), szInput, 4)
+	static szMessage[CC_MAX_MESSAGE_SIZE]
+	vformat(szMessage[1], charsmax(szMessage), input, 4)
 	szMessage[0] = 0x01
-	bPlus = false
-	
-	for(i = 0; i < sizeof(CC_PLUS_COLORS) - 1; i += 2)
-	{
-		if(contain(szMessage, CC_PLUS_COLORS[i]) != -1)
-		{
-			bPlus = true
-			break
-		}
-	}
-	
-	if(!bPlus)
-	{
-		static iColor
-		
-		if(is_user_connected(iPlayer))
-		{
-			switch(get_user_team(iPlayer))
-			{
-				case 1: iColor = CC_COLOR_RED
-				case 2: iColor = CC_COLOR_BLUE
-				default: iColor = CC_COLOR_GREY
-			}
-		}
-		else
-			iColor = iPlayer
-			
-		switch(iColor)
-		{
-			case CC_COLOR_RED: add(szMessage, charsmax(szMessage), CC_COLORS_LIST[0])
-			case CC_COLOR_BLUE: add(szMessage, charsmax(szMessage), CC_COLORS_LIST[1])
-			case CC_COLOR_GREY: add(szMessage, charsmax(szMessage), CC_COLORS_LIST[2])
-		}
-	}
-	
+	CC_COLOR_PLAYER_INDEX = player
 	return CC_SendMessage(id, szMessage)
 }
 
 /**
  * Sends a colored chat message to a group of players matching the flags from the get_players() function.
  *
- * @note The filtering flags are the same that are use by the get_players() function
+ * @note The filtering flags are the same that are used by the get_players() function
  *
- * @param szFlags   Filtering flags
- * @param szParams  String to match against if the flags require it
- * @param szInput	The message to send
- * @param ... 		Variable number of formatting parameters
+ * @param flags     Filtering flags
+ * @param params    String to match against if the flags require it
+ * @param input     The message to send
+ * @param ...       Variable number of formatting parameters
  *
  * @return          Length of the printed message or 0 if no players were matched
  */
-stock CC_GroupMessage(const szFlags[] = "", const szParams[] = "", const szInput[], any:...)
+stock CC_GroupMessage(const flags[] = "", const params[] = "", const input[], any:...)
 {
 	static szMessage[CC_MAX_MESSAGE_SIZE], iPlayers[CC_MAX_PLAYERS], iPnum
-	vformat(szMessage, charsmax(szMessage), szInput, 4)
-	get_players(iPlayers, iPnum, szFlags, szParams)
+	vformat(szMessage, charsmax(szMessage), input, 4)
+	get_players(iPlayers, iPnum, flags, params)
 	
 	if(!iPnum)
+	{
 		return 0
+	}
 	
-	static i
-	
-	for(i = 0; i < iPnum; i++)
+	static bool:bForce, iColor, i
+
+	for(bForce = CC_COLOR_FORCE, iColor = CC_COLOR_PLAYER_INDEX, i = 0; i < iPnum; i++)
+	{
+		CC_SetColor(iColor, bForce)
 		CC_SendMessage(iPlayers[i], szMessage)
+	}
 	
 	return strlen(szMessage)
 }
@@ -333,50 +354,60 @@ stock CC_GroupMessage(const szFlags[] = "", const szParams[] = "", const szInput
 /**
  * Sends a colored chat message to all players who have the specified admin flags.
  *
- * @param szFlags	Admin flags
- * @param bAllFlags If set to true it will match players who have ALL of the specified admin flags, otherwise it will match players with ANY of the flags
- * @param szInput	The message to send
- * @param ... 		Variable number of formatting parameters
+ * @param flags     Admin flags
+ * @param allflags  If set to true it will match players who have ALL of the specified admin flags, otherwise it will match players with ANY of the flags
+ * @param input     The message to send
+ * @param ...       Variable number of formatting parameters
  *
  * @return          Length of the printed message or 0 if no players were matched
  */
-stock CC_SendAdminMessage(const szFlags[] = "", const bool:bAllFlags = true, const szInput[], any:...)
+stock CC_SendAdminMessage(const flags[] = "", bool:allflags = true, const input[], any:...)
 {
 	static szMessage[CC_MAX_MESSAGE_SIZE], iPlayers[CC_MAX_PLAYERS], iPnum
-	vformat(szMessage, charsmax(szMessage), szInput, 4)
+	vformat(szMessage, charsmax(szMessage), input, 4)
 	get_players(iPlayers, iPnum, CC_FILTERING_FLAGS)
 	
 	if(!iPnum)
+	{
 		return 0
+	}
 	
-	static iCount, iFlags, iPlayer, i
-	iFlags = read_flags(szFlags)
+	static bool:bForce, iColor, iCount, iFlags, iPlayer, i
+	iFlags = read_flags(flags)
 	iCount = 0
 	
-	for(i = 0; i < iPnum; i++)
+	for(bForce = CC_COLOR_FORCE, iColor = CC_COLOR_PLAYER_INDEX, i = 0; i < iPnum; i++)
 	{
 		iPlayer = iPlayers[i]
 		
-		switch(bAllFlags)
+		switch(allflags)
 		{
 			case true:
 			{
 				if(get_user_flags(iPlayer) & iFlags != iFlags)
+				{
 					continue
+				}
 			}
 			case false:
 			{
 				if(!(get_user_flags(iPlayer) & iFlags))
+				{
 					continue
+				}
 			}
 		}
 		
 		iCount++
+
+		CC_SetColor(iColor, bForce)
 		CC_SendMessage(iPlayer, szMessage)
 	}
 	
 	if(!iCount)
+	{
 		return 0
+	}
 	
 	return strlen(szMessage)
 }
@@ -386,23 +417,25 @@ stock CC_SendAdminMessage(const szFlags[] = "", const bool:bAllFlags = true, con
  *
  * @note If the file name is not set, the default log file will be used instead.
  *
- * @param id     	Client index (use 0 to send to all players)
- * @param szFile   	The log file that will be used
- * @param szInput	The message to send
- * @param ... 		Variable number of formatting parameters
+ * @param id        Client index (use 0 to send to all players)
+ * @param file      The log file that will be used
+ * @param input     The message to send
+ * @param ...       Variable number of formatting parameters
  *
  * @return          Length of the printed message
  */
-stock CC_LogMessage(const id, const szFile[] = "", const szInput[], any:...)
+stock CC_LogMessage(id, const file[] = "", const input[], any:...)
 {
 	static szMessage[CC_MAX_MESSAGE_SIZE]
-	vformat(szMessage, charsmax(szMessage), szInput, 4)
+	vformat(szMessage, charsmax(szMessage), input, 4)
 	
 	if(!CC_SendMessage(id, szMessage))
+	{
 		return 0
+	}
 		
 	CC_RemoveColors(szMessage, charsmax(szMessage))
-	szFile[0] ? log_to_file(szFile, szMessage) : log_amx(szMessage)
+	file[0] ? log_to_file(file, szMessage) : log_amx(szMessage)
 	return strlen(szMessage)
 }
 
@@ -417,62 +450,75 @@ stock CC_LogMessage(const id, const szFile[] = "", const szInput[], any:...)
  *		 with the CC_ShowActivity() function. You can disable this feature by adding
  *		 #define CC_DONT_OVERWRITE_ACTIVITY before #include <cromchat> in your plugin.
  *
- * @param id     	Client index performing the action
- * @param szName   	Name of client performing the action
- * @param szInput   Formatting rules
- * @param ...    	Variable number of formatting parameters
+ * @param id        Client index performing the action
+ * @param name      Name of client performing the action
+ * @param input     Formatting rules
+ * @param ...       Variable number of formatting parameters
  *
  * @noreturn
  */
-stock CC_ShowActivity(id, const szName[], const szInput[], any:...)
+stock CC_ShowActivity(id, const name[], const input[], any:...)
 {
 	if(CC_FIRST_TIME_ACTIVITY)
+	{
 		_CC_ActivityInit()
+	}
 
-	static szMessage[CC_MAX_MESSAGE_SIZE], szPrefix[CC_MAX_ACT_PREFIX_SIZE], iPlayers[CC_MAX_PLAYERS], iPlayer, iPnum, i
-	vformat(szMessage, charsmax(szMessage), szInput, 4)
+	static szMessage[CC_MAX_MESSAGE_SIZE], szPrefix[CC_MAX_ACT_PREFIX_SIZE], iPlayers[CC_MAX_PLAYERS], bool:bForce, iPlayer, iPnum, iColor, i
+	vformat(szMessage, charsmax(szMessage), input, 4)
 	_CC_GetActivityPrefix(id, szPrefix, charsmax(szPrefix))
 
 	switch(get_pcvar_num(CC_ACTIVITY_POINTER))
 	{
 		case 1: CC_SendMessage(0, "%L: %s", LANG_PLAYER, szPrefix, szMessage)
-		case 2: CC_SendMessage(0, "%L %s: %s", LANG_PLAYER, szPrefix, szName, szMessage)
+		case 2: CC_SendMessage(0, "%L %s: %s", LANG_PLAYER, szPrefix, name, szMessage)
 		case 3:
 		{
 			get_players(iPlayers, iPnum, CC_FILTERING_FLAGS)
 
-			for(i = 0; i < iPnum; i++)
+			for(bForce = CC_COLOR_FORCE, iColor = CC_COLOR_PLAYER_INDEX, i = 0; i < iPnum; i++)
 			{
 				iPlayer = iPlayers[i]
+				CC_SetColor(iColor, bForce)
 
 				if(_CC_IsActivityAdmin(iPlayer))
-					CC_SendMessage(iPlayer, "%L %s: %s", iPlayer, szPrefix, szName, szMessage)
+				{
+					CC_SendMessage(iPlayer, "%L %s: %s", iPlayer, szPrefix, name, szMessage)
+				}
 				else
+				{
 					CC_SendMessage(iPlayer, "%L: %s", iPlayer, szPrefix, szMessage)
+				}
 			}
 		}
 		case 4:
 		{
 			get_players(iPlayers, iPnum, CC_FILTERING_FLAGS)
 
-			for(i = 0; i < iPnum; i++)
+			for(bForce = CC_COLOR_FORCE, iColor = CC_COLOR_PLAYER_INDEX, i = 0; i < iPnum; i++)
 			{
 				iPlayer = iPlayers[i]
 
 				if(_CC_IsActivityAdmin(iPlayer))
-					CC_SendMessage(iPlayer, "%L %s: %s", iPlayer, szPrefix, szName, szMessage)
+				{
+					CC_SetColor(iColor, bForce)
+					CC_SendMessage(iPlayer, "%L %s: %s", iPlayer, szPrefix, name, szMessage)
+				}
 			}
 		}
 		case 5:
 		{
 			get_players(iPlayers, iPnum, CC_FILTERING_FLAGS)
 
-			for(i = 0; i < iPnum; i++)
+			for(bForce = CC_COLOR_FORCE, iColor = CC_COLOR_PLAYER_INDEX, i = 0; i < iPnum; i++)
 			{
 				iPlayer = iPlayers[i]
 
 				if(_CC_IsActivityAdmin(iPlayer))
+				{
+					CC_SetColor(iColor, bForce)
 					CC_SendMessage(iPlayer, "%L: %s", iPlayer, szPrefix, szMessage)
+				}
 			}
 		}
 	}
@@ -489,52 +535,64 @@ stock CC_ShowActivity(id, const szName[], const szInput[], any:...)
  *		 with the CC_ShowActivityId() function. You can disable this feature by adding
  *		 #define CC_DONT_OVERWRITE_ACTIVITY before #include <cromchat> in your plugin.
  *
- * @param iTarget   Client index to display message to
+ * @param target    Client index to display message to
  * @param id        Client index performing the action
- * @param szName    Name of client performing the action
- * @param szInput   Formatting rules
+ * @param name      Name of client performing the action
+ * @param input     Formatting rules
  * @param ...       Variable number of formatting parameters
  *
  * @noreturn
  */
-stock CC_ShowActivityId(iTarget, id, const szName[], const szInput[], any:...)
+stock CC_ShowActivityId(target, id, const name[], const input[], any:...)
 {
-	if(!is_user_connected(iTarget))
+	if(!is_user_connected(target))
+	{
 		return
+	}
 
 	if(CC_FIRST_TIME_ACTIVITY)
+	{
 		_CC_ActivityInit()
+	}
 
 	static szMessage[CC_MAX_MESSAGE_SIZE], szPrefix[CC_MAX_ACT_PREFIX_SIZE]
-	vformat(szMessage, charsmax(szMessage), szInput, 5)
+	vformat(szMessage, charsmax(szMessage), input, 5)
 	_CC_GetActivityPrefix(id, szPrefix, charsmax(szPrefix))
 
 	switch(get_pcvar_num(CC_ACTIVITY_POINTER))
 	{
-		case 1: CC_SendMessage(iTarget, "%L: %s", iTarget, szPrefix, szMessage)
-		case 2: CC_SendMessage(iTarget, "%L %s: %s", iTarget, szPrefix, szName, szMessage)
+		case 1: CC_SendMessage(target, "%L: %s", target, szPrefix, szMessage)
+		case 2: CC_SendMessage(target, "%L %s: %s", target, szPrefix, name, szMessage)
 		case 3:
 		{
-			if(_CC_IsActivityAdmin(iTarget))
-				CC_SendMessage(iTarget, "%L %s: %s", iTarget, szPrefix, szName, szMessage)
+			if(_CC_IsActivityAdmin(target))
+			{
+				CC_SendMessage(target, "%L %s: %s", target, szPrefix, name, szMessage)
+			}
 			else
-				CC_SendMessage(iTarget, "%L: %s", iTarget, szPrefix, szMessage)
+			{
+				CC_SendMessage(target, "%L: %s", target, szPrefix, szMessage)
+			}
 		}
 		case 4:
 		{
-			if(_CC_IsActivityAdmin(iTarget))
-				CC_SendMessage(iTarget, "%L %s: %s", iTarget, szPrefix, szName, szMessage)
+			if(_CC_IsActivityAdmin(target))
+			{
+				CC_SendMessage(target, "%L %s: %s", target, szPrefix, name, szMessage)
+			}
 		}
 		case 5:
 		{
-			if(_CC_IsActivityAdmin(iTarget))
-				CC_SendMessage(iTarget, "%L: %s", iTarget, szPrefix, szMessage)
+			if(_CC_IsActivityAdmin(target))
+			{
+				CC_SendMessage(target, "%L: %s", target, szPrefix, szMessage)
+			}
 		}
 	}
 }
 
 /**
- * Sends a colored chat message to all client using nromal language keys that obeys the amx_show_activity cvar.
+ * Sends a colored chat message to all clients using nromal language keys that obeys the amx_show_activity cvar.
  *
  * @note This function is made to mimic the show_activity_key() function, but sends a
  *		 colored chat message instead using the CC_SendMessage() function. This means
@@ -544,21 +602,23 @@ stock CC_ShowActivityId(iTarget, id, const szName[], const szInput[], any:...)
  *		 with the CC_ShowActivityKey() function. You can disable this feature by adding
  *		 #define CC_DONT_OVERWRITE_ACTIVITY before #include <cromchat> in your plugin.
  *
- * @param szWithout The language key that does not have the name field
- * @param szWith    The language key that does have the name field
- * @param szName    The name of the person doing the action
- * @param ...       Pass any extra format arguments for the language key in the variable arguments list
+ * @param without  The language key that does not have the name field
+ * @param with     The language key that does have the name field
+ * @param name     The name of the person doing the action
+ * @param ...      Pass any extra format arguments for the language key in the variable arguments list
  *
  * @noreturn
  */
-stock CC_ShowActivityKey(const szWithout[], const szWith[], const szName[], any:...)
+stock CC_ShowActivityKey(const without[], const with[], const name[], any:...)
 {
-	#pragma unused szName
+	#pragma unused name
 
 	if(CC_FIRST_TIME_ACTIVITY)
+	{
 		_CC_ActivityInit()
+	}
 
-	static szMessage[CC_MAX_MESSAGE_SIZE], szKey[CC_MAX_MESSAGE_SIZE], iPlayers[CC_MAX_PLAYERS], iPnum, iPlayer, i
+	static szMessage[CC_MAX_MESSAGE_SIZE], szKey[CC_MAX_MESSAGE_SIZE], iPlayers[CC_MAX_PLAYERS], bool:bForce, iPnum, iPlayer, iColor, i
 
 	switch(get_pcvar_num(CC_ACTIVITY_POINTER))
 	{
@@ -566,11 +626,12 @@ stock CC_ShowActivityKey(const szWithout[], const szWith[], const szName[], any:
 		{
 			get_players(iPlayers, iPnum, CC_FILTERING_FLAGS)
 
-			for(i = 0; i < iPnum; i++)
+			for(bForce = CC_COLOR_FORCE, iColor = CC_COLOR_PLAYER_INDEX, i = 0; i < iPnum; i++)
 			{
 				iPlayer = iPlayers[i]
+				CC_SetColor(iColor, bForce)
 
-				LookupLangKey(szKey, charsmax(szKey), szWithout, iPlayer)
+				LookupLangKey(szKey, charsmax(szKey), without, iPlayer)
 				vformat(szMessage, charsmax(szMessage), szKey, 4)
 				CC_SendMessage(iPlayer, szMessage)
 			}
@@ -579,11 +640,12 @@ stock CC_ShowActivityKey(const szWithout[], const szWith[], const szName[], any:
 		{
 			get_players(iPlayers, iPnum, CC_FILTERING_FLAGS)
 
-			for(i = 0; i < iPnum; i++)
+			for(bForce = CC_COLOR_FORCE, iColor = CC_COLOR_PLAYER_INDEX, i = 0; i < iPnum; i++)
 			{
 				iPlayer = iPlayers[i]
+				CC_SetColor(iColor, bForce)
 
-				LookupLangKey(szKey, charsmax(szKey), szWith, iPlayer)
+				LookupLangKey(szKey, charsmax(szKey), with, iPlayer)
 				vformat(szMessage, charsmax(szMessage), szKey, 3)
 				CC_SendMessage(iPlayer, szMessage)
 			}
@@ -592,18 +654,19 @@ stock CC_ShowActivityKey(const szWithout[], const szWith[], const szName[], any:
 		{
 			get_players(iPlayers, iPnum, CC_FILTERING_FLAGS)
 
-			for(i = 0; i < iPnum; i++)
+			for(bForce = CC_COLOR_FORCE, iColor = CC_COLOR_PLAYER_INDEX, i = 0; i < iPnum; i++)
 			{
 				iPlayer = iPlayers[i]
+				CC_SetColor(iColor, bForce)
 
 				if(_CC_IsActivityAdmin(iPlayer))
 				{
-					LookupLangKey(szKey, charsmax(szKey), szWith, iPlayer)
+					LookupLangKey(szKey, charsmax(szKey), with, iPlayer)
 					vformat(szMessage, charsmax(szMessage), szKey, 3)
 				}
 				else
 				{
-					LookupLangKey(szKey, charsmax(szKey), szWithout, iPlayer)
+					LookupLangKey(szKey, charsmax(szKey), without, iPlayer)
 					vformat(szMessage, charsmax(szMessage), szKey, 4)
 				}
 
@@ -614,13 +677,14 @@ stock CC_ShowActivityKey(const szWithout[], const szWith[], const szName[], any:
 		{
 			get_players(iPlayers, iPnum, CC_FILTERING_FLAGS)
 
-			for(i = 0; i < iPnum; i++)
+			for(bForce = CC_COLOR_FORCE, iColor = CC_COLOR_PLAYER_INDEX, i = 0; i < iPnum; i++)
 			{
 				iPlayer = iPlayers[i]
 
 				if(_CC_IsActivityAdmin(iPlayer))
 				{
-					LookupLangKey(szKey, charsmax(szKey), szWith, iPlayer)
+					CC_SetColor(iColor, bForce)
+					LookupLangKey(szKey, charsmax(szKey), with, iPlayer)
 					vformat(szMessage, charsmax(szMessage), szKey, 3)
 					CC_SendMessage(iPlayer, szMessage)
 				}
@@ -630,13 +694,14 @@ stock CC_ShowActivityKey(const szWithout[], const szWith[], const szName[], any:
 		{
 			get_players(iPlayers, iPnum, CC_FILTERING_FLAGS)
 
-			for(i = 0; i < iPnum; i++)
+			for(bForce = CC_COLOR_FORCE, iColor = CC_COLOR_PLAYER_INDEX, i = 0; i < iPnum; i++)
 			{
 				iPlayer = iPlayers[i]
 
 				if(_CC_IsActivityAdmin(iPlayer))
 				{
-					LookupLangKey(szKey, charsmax(szKey), szWithout, iPlayer)
+					CC_SetColor(iColor, bForce)
+					LookupLangKey(szKey, charsmax(szKey), without, iPlayer)
 					vformat(szMessage, charsmax(szMessage), szKey, 4)
 					CC_SendMessage(iPlayer, szMessage)
 				}
@@ -648,27 +713,31 @@ stock CC_ShowActivityKey(const szWithout[], const szWith[], const szName[], any:
 /**
  * Removes the color codes from a message.
  *
- * @param szMessage The message to work with
- * @param iLen		Maximum buffer length
- * @param bChat		If set to true, it will remove the chat color codes
- * @param bMenu		If set to true, it will remove the menu color codes
+ * @param message   The message to work with
+ * @param len       Maximum buffer length
+ * @param chat      If set to true, it will remove the chat color codes
+ * @param menu      If set to true, it will remove the menu color codes
  *
  * @noreturn
  */
-stock CC_RemoveColors(szMessage[], iLen, bool:bChat = true, bool:bMenu = false)
+stock CC_RemoveColors(message[], len, bool:chat = true, bool:menu = false)
 {
 	static i
 	
-	if(bChat)
+	if(chat)
 	{
 		for(i = 0; i < sizeof(CC_COLORS_LIST); i++)
-			replace_all(szMessage, iLen, CC_COLORS_LIST[i], "")
+		{
+			replace_all(message, len, CC_COLORS_LIST[i], "")
+		}
 	}
 	
-	if(bMenu)
+	if(menu)
 	{
 		for(i = 0; i < sizeof(CC_MENU_COLORS); i++)
-			replace_all(szMessage, iLen, CC_MENU_COLORS[i], "")
+		{
+			replace_all(message, len, CC_MENU_COLORS[i], "")
+		}
 	}
 }
 
@@ -678,12 +747,20 @@ stock CC_RemoveColors(szMessage[], iLen, bool:bChat = true, bool:bMenu = false)
  * @note The prefix can be removed in a given message if the prefix-removing symbol is
  *       used in the beginning of the message. By default, this symbol is equal to &x00.
  *
- * @param szPrefix  The prefix
+ * @param prefix    Prefix to set
  *
  * @noreturn
  */
-stock CC_SetPrefix(const szPrefix[])
-	copy(CC_PREFIX, charsmax(CC_PREFIX), szPrefix)
+stock CC_SetPrefix(const prefix[])
+{
+	_CC_ModInit()
+	copy(CC_PREFIX, charsmax(CC_PREFIX), prefix)
+
+	if(!CC_IS_CSTRIKE)
+	{
+		CC_RemoveColors(CC_PREFIX, charsmax(CC_PREFIX))
+	}
+}
 	
 /**
  * Removes the global message prefix.
@@ -691,64 +768,121 @@ stock CC_SetPrefix(const szPrefix[])
  * @noreturn
  */
 stock CC_RemovePrefix()
-	CC_PREFIX[0] = EOS
-
-/**
- * This function is used by the other stocks to send a raw message.
- *
- * @param id     	Client index (use 0 to send to all players)
- * @param szMessage	The message to send
- * @param szTeam 	Message color according to the team
- *
- * @noreturn
- */
-stock _CC_WriteMessage(const id, const szMessage[], szTeam[CC_MAX_TEAM_SIZE])
 {
-	static bool:bRefresh
-	bRefresh = true
-	
-	if(!szTeam[0])
-	{
-		bRefresh = false
-		get_user_team(id, szTeam, charsmax(szTeam))
-	}
-	
-	if(CC_FIRST_TIME)
-	{
-		CC_FIRST_TIME = false
-		CC_MSG_SAYTEXT = get_user_msgid("SayText")
-		CC_MSG_TEAMINFO = get_user_msgid("TeamInfo")
-	}
-		
-	_CC_SendTeamInfo(id, szTeam)
-
-	message_begin(MSG_ONE, CC_MSG_SAYTEXT, _, id)
-	write_byte(id)
-	//write_string("%s") -- Good Job, Valve!
-	write_string(szMessage)
-	message_end()
-	
-	if(bRefresh)
-	{
-		get_user_team(id, szTeam, charsmax(szTeam))
-		_CC_SendTeamInfo(id, szTeam)
-	}
+	CC_PREFIX[0] = EOS
 }
 
 /**
- * Updates the player's team info.
+ * Sets the team color for the next message that's going to be sent.
  *
- * @param id     	Client index
- * @param szTeam	Team to use
+ * @param index     CC_COLOR_* or player index to get color from
+ * @param force     If set to true, custom colors in the code will be ignored
+ *                  and the message will be forced to use the color set here
  *
  * @noreturn
  */
-stock _CC_SendTeamInfo(const id, const szTeam[CC_MAX_TEAM_SIZE])
+stock CC_SetColor(index, bool:force = false)
 {
-	message_begin(MSG_ONE, CC_MSG_TEAMINFO, _, id)
-	write_byte(id)
-	write_string(szTeam)
+	CC_COLOR_PLAYER_INDEX = index
+	CC_COLOR_FORCE = force
+}
+
+/**
+ * This function is used by the other stocks in order to send a raw message.
+ *
+ * @param id        Client index
+ * @param message   The message to send
+ *
+ * @noreturn
+ */
+stock _CC_WriteMessage(id, const message[])
+{
+	static CC_INIT, CC_MSG_SAYTEXT
+
+	if(!CC_INIT)
+	{
+		CC_INIT = true
+		CC_MSG_SAYTEXT = get_user_msgid("SayText")
+
+		// Credits to WPMGPRoSToTeMa
+		if(!LibraryExists(CC_LIBRARY_NAME, LibType_Library))
+		{
+			register_library(CC_LIBRARY_NAME)
+
+			if(CC_IS_CSTRIKE)
+			{
+				new iCacheList[] = { CC_COLOR_WHITE, CC_COLOR_BLUE, CC_COLOR_RED }
+				new szCacheList[][] = { "", "CT", "TERRORIST" }
+				new CC_MSG_TEAMINFO = get_user_msgid("TeamInfo")
+
+				for(new i; i < sizeof(iCacheList); i++)
+				{
+					engfunc(EngFunc_MessageBegin, MSG_INIT, CC_MSG_TEAMINFO, 0, 0)
+					write_byte(iCacheList[i])
+					write_string(szCacheList[i])
+					message_end()
+				}
+
+				new iPlayers[CC_MAX_PLAYERS], iPnum
+				get_players(iPlayers, iPnum, CC_FILTERING_FLAGS)
+
+				for(new iPlayer, i, j; i < iPnum; i++)
+				{
+					iPlayer = iPlayers[i]
+
+					for(j = 0; j < sizeof(iCacheList); j++)
+					{
+						message_begin(MSG_ONE, CC_MSG_TEAMINFO, _, iPlayer)
+						write_byte(iCacheList[j])
+						write_string(szCacheList[j])
+						message_end()
+					}
+				}
+			}
+		}
+	}
+
+	static const CC_PLAYER_ITEM_PHRASE[] = "#Spec_PlayerItem" // Credits to WPMGPRoSToTeMa
+
+	message_begin(MSG_ONE, CC_MSG_SAYTEXT, _, id)
+
+	if(CC_IS_CSTRIKE)
+	{
+		write_byte(CC_COLOR_PLAYER_INDEX && CC_COLOR_PLAYER_INDEX != CC_COLOR_TEAM ? CC_COLOR_PLAYER_INDEX : id)
+	}
+	else
+	{
+		write_byte(id)
+	}
+
+	write_string(CC_PLAYER_ITEM_PHRASE) 
+	write_string(message)
 	message_end()
+}
+
+/**
+ * Checks if the server is running Counter-Strike.
+ *
+ * @noreturn
+ */
+stock _CC_ModInit()
+{
+	static bool:CC_MOD_INIT
+
+	if(!CC_MOD_INIT)
+	{
+		CC_MOD_INIT = true
+
+		static const CC_CSTRIKE_MODNAME[] = "cstrike"
+
+		new szModName[sizeof(CC_CSTRIKE_MODNAME)]
+		get_modname(szModName, charsmax(szModName))
+
+		if(equal(szModName, CC_CSTRIKE_MODNAME))
+		{
+			CC_IS_CSTRIKE = true
+		}
+	}
 }
 
 /**
@@ -757,28 +891,34 @@ stock _CC_SendTeamInfo(const id, const szTeam[CC_MAX_TEAM_SIZE])
  * @noreturn
  */
 stock _CC_ActivityInit()
- {
- 	CC_FIRST_TIME_ACTIVITY = false
- 	CC_ACTIVITY_POINTER = get_cvar_pointer(CC_ACTIVITY_CVAR)
+{
+	CC_FIRST_TIME_ACTIVITY = false
+	CC_ACTIVITY_POINTER = get_cvar_pointer("amx_show_activity")
 
- 	if(!CC_ACTIVITY_POINTER)
- 		CC_ACTIVITY_POINTER = register_cvar(CC_ACTIVITY_CVAR, CC_ACTIVITY_CVAR_DEF, CC_ACTIVITY_CVAR_TYPE)
- }
+	if(!CC_ACTIVITY_POINTER)
+	{
+		CC_ACTIVITY_POINTER = register_cvar(CC_ACTIVITY_CVAR, "2", FCVAR_PROTECTED)
+	}
+}
 
 /**
  * Returns the player prefix used with "ShowActivity" functions.
  *
- * @param id     	Client index
+ * @param id        Client index
+ * @param buffer    Buffer to store the prefix in
+ * @param len       Maximum buffer length
  *
  * @noreturn
  */
-stock _CC_GetActivityPrefix(const id, szPrefix[CC_MAX_ACT_PREFIX_SIZE], const iLen)
-	copy(szPrefix, iLen, _CC_IsActivityAdmin(id) ? CC_ACTIVITY_PREFIX_ADMIN : CC_ACTIVITY_PREFIX_PLAYER)
+stock _CC_GetActivityPrefix(id, buffer[CC_MAX_ACT_PREFIX_SIZE], len)
+{
+	copy(buffer, len, _CC_IsActivityAdmin(id) ? CC_ACTIVITY_PREFIX_ADMIN : CC_ACTIVITY_PREFIX_PLAYER)
+}
 
 /**
- * Checks whether or not the client has the required flag to be marked as an admin for the "ShowActivity" functions.
+ * Checks whether the client has the required flag to be marked as an admin for the "ShowActivity" functions.
  *
- * @param id     	Client index
+ * @param id        Client index
  *
  * @return          True if he has, false otherwise
  */
