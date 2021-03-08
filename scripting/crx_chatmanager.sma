@@ -791,9 +791,7 @@ public OnSay(id) <SAYMETHOD_HOOK_SAY_CMD>
 	static szCommand[5]
 	read_argv(0, szCommand, charsmax(szCommand))
 
-	new bool:bTeam = szCommand[3] == '_'
-
-	return Handle_Message(id, szArgs, bTeam)
+	return Handle_Message(id, szArgs, szCommand[3] == '_')
 }
 
 public OnSay() <SAYMETHOD_HOOK_SAY_MSG>
