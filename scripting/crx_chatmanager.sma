@@ -4,19 +4,17 @@
 #include <cstrike>
 #include <fakemeta>
 
-new const PLUGIN_VERSION[] = "4.7.2"
+new const PLUGIN_VERSION[] = "4.8"
 const Float:DELAY_ON_REGISTER = 1.0
 const Float:DELAY_ON_CONNECT = 1.0
 const Float:DELAY_ON_CHANGE = 0.1
 const MAX_VALUE_LENGTH = 32
 const PLACEHOLDER_LENGTH = 64
 const MAX_PREFIX_LENGTH = 64
-const WRITTEN_MESSAGE_SIZE = 120
-const FULL_MESSAGE_SIZE = 180
 new const ERROR_FILE[] = "chatmanager_errors.log"
 
-#if defined replace_string
-	#define replace_all replace_string
+#if !defined replace_string
+	#define replace_string replace_all
 #endif
 
 #if !defined MAX_PLAYERS
@@ -28,11 +26,19 @@ const MAX_NAME_LENGTH = 32
 #endif
 
 #if !defined MAX_IP_LENGTH
-	const MAX_IP_LENGTH = 16
+const MAX_IP_LENGTH = 16
 #endif
 
 #if !defined MAX_AUTHID_LENGTH
-	const MAX_AUTHID_LENGTH = 64
+const MAX_AUTHID_LENGTH = 64
+#endif
+
+#if !defined MAX_RESOURCE_PATH_LENGTH
+const MAX_RESOURCE_PATH_LENGTH = 64
+#endif
+
+#if !defined PLATFORM_MAX_PATH
+const PLATFORM_MAX_PATH = 256
 #endif
 
 /*
@@ -129,6 +135,12 @@ enum
 
 enum
 {
+	SAYMETHOD_HOOK_SAY_CMD,
+	SAYMETHOD_HOOK_SAY_MSG
+}
+
+enum
+{
 	EDB_IGNORE = 0,
 	EDB_COMMENT,
 	EDB_REMOVE
@@ -165,7 +177,9 @@ enum _:Settings
 	SAY_SOUND[MAX_RESOURCE_PATH_LENGTH],
 	SAY_TEAM_SOUND[MAX_RESOURCE_PATH_LENGTH],
 	EXPIRATION_DATE_FORMAT[MAX_VALUE_LENGTH],
-	EXPIRATION_DATE_BEHAVIOR
+	EXPIRATION_DATE_BEHAVIOR,
+	COLORCHAT_FLAG,
+	SAY_METHOD
 }
 
 enum _:PlayerData
@@ -218,7 +232,20 @@ public plugin_init()
 	register_cvar("CRXChatManager", PLUGIN_VERSION, FCVAR_SERVER|FCVAR_SPONLY|FCVAR_UNLOGGED)
 	register_event("SayText", "OnSayTextNameChange", "a", "2=#Cstrike_Name_Change")
 
-	set_task(DELAY_ON_REGISTER, "RegisterCommands")
+	switch(g_eSettings[SAY_METHOD])
+	{
+		case SAYMETHOD_HOOK_SAY_CMD:
+		{
+			state SAYMETHOD_HOOK_SAY_CMD
+			set_task(DELAY_ON_REGISTER, "RegisterCommands")
+		}
+		case SAYMETHOD_HOOK_SAY_MSG:
+		{
+			state SAYMETHOD_HOOK_SAY_MSG
+			register_message(get_user_msgid("SayText"), "OnSay")
+		}
+	}
+
 	_cm_on_player_data_updated = CreateMultiForward("cm_on_player_data_updated", ET_IGNORE, FP_CELL)
 }
 
@@ -259,8 +286,8 @@ public plugin_precache()
 
 public RegisterCommands()
 {
-	register_clcmd("say", "Hook_Say")
-	register_clcmd("say_team", "Hook_Say")
+	register_clcmd("say", "OnSay")
+	register_clcmd("say_team", "OnSay")
 	register_concmd("cm_reload", "Cmd_Reload", ADMIN_RCON, "-- reloads the configuration file")
 }
 
@@ -399,6 +426,11 @@ ReadFile()
 	}
 
 	new iFilePointer = fopen(g_szFilename, "rt")
+
+	if(!iFilePointer)
+	{
+		set_fail_state("Error opening configuration file.")
+	}
 
 	if(iFilePointer)
 	{
@@ -560,6 +592,17 @@ ReadFile()
 							else if(equal(szKey, "EXPIRATION_DATE_BEHAVIOR"))
 							{
 								g_eSettings[EXPIRATION_DATE_BEHAVIOR] = clamp(str_to_num(szValue), EDB_IGNORE, EDB_REMOVE)
+							}
+							else if(equal(szKey, "COLORCHAT_FLAG"))
+							{
+								g_eSettings[COLORCHAT_FLAG] = read_flags(szValue)
+							}
+							else if(equal(szKey, "SAY_METHOD"))
+							{
+								if(!g_bFileWasRead)
+								{
+									g_eSettings[SAY_METHOD] = clamp(str_to_num(szValue), SAYMETHOD_HOOK_SAY_CMD, SAYMETHOD_HOOK_SAY_MSG)
+								}
 							}
 						}
 						case SECTION_FORMAT_DEFINITIONS:
@@ -735,17 +778,51 @@ public Cmd_Reload(id, iLevel, iCid)
 	return PLUGIN_HANDLED
 }
 
-public Hook_Say(id)
+public OnSay(id) <SAYMETHOD_HOOK_SAY_CMD>
 {
 	if(!is_user_connected(id))
 	{
 		return PLUGIN_HANDLED
 	}
 
-	static szArgs[WRITTEN_MESSAGE_SIZE]
+	static szArgs[CC_MAX_MESSAGE_SIZE]
 	read_args(szArgs, charsmax(szArgs)); remove_quotes(szArgs)
-	CC_RemoveColors(szArgs, charsmax(szArgs))
 
+	static szCommand[5]
+	read_argv(0, szCommand, charsmax(szCommand))
+
+	new bool:bTeam = szCommand[3] == '_'
+
+	return Handle_Message(id, szArgs, bTeam)
+}
+
+public OnSay() <SAYMETHOD_HOOK_SAY_MSG>
+{
+	new id = get_msg_arg_int(1)
+
+	if(!is_user_connected(id))
+	{
+		return PLUGIN_CONTINUE
+	}
+
+	static const SAY_MSG_PART[] = "#Cstrike_Chat_"
+
+	static szMessage[sizeof(SAY_MSG_PART) + 1]
+	get_msg_arg_string(2, szMessage, charsmax(szMessage))
+
+	if(!has_argument(szMessage, SAY_MSG_PART))
+	{
+		return PLUGIN_CONTINUE
+	}
+
+	static szArgs[CC_MAX_MESSAGE_SIZE]
+	get_msg_arg_string(4, szArgs, charsmax(szArgs))
+
+	return min(Handle_Message(id, szArgs, szMessage[14] != 'A'), PLUGIN_HANDLED)
+}
+
+Handle_Message(id, szArgs[CC_MAX_MESSAGE_SIZE], bool:bTeam)
+{
 	static szFirstChar[2]
 	szFirstChar[0] = szArgs[0]
 
@@ -760,11 +837,15 @@ public Hook_Say(id)
 		UpdateData(id)
 	}
 
-	static szCommand[5]
-	read_argv(0, szCommand, charsmax(szCommand))
+	if(!(g_ePlayerData[id][PDATA_ADMIN_FLAGS] & g_eSettings[COLORCHAT_FLAG]))
+	{
+		CC_RemoveColors(szArgs, charsmax(szArgs))
+	}
 
-	static szMessage[FULL_MESSAGE_SIZE + 32], szSound[128], iPlayers[32]
-	new bool:bTeam = szCommand[3] == '_'
+	CC_RemoveExploits(szArgs, charsmax(szArgs))
+
+	static szMessage[CC_MAX_MESSAGE_SIZE], szSound[MAX_RESOURCE_PATH_LENGTH], iPlayers[MAX_PLAYERS]
+
 	new CsTeams:iTeam = cs_get_user_team(id)
 	new iAlive = is_user_alive(id)
 
@@ -855,50 +936,50 @@ apply_replacements(const szFormat[], id, iAlive, CsTeams:iTeam, const szArgs[], 
 	#if defined ARG_ADMIN_PREFIX
 	if(g_ePlayerData[id][PDATA_PREFIX_ENABLED])
 	{
-		replace_all(szMessage, iLen, ARG_ADMIN_PREFIX, g_ePlayerData[id][PDATA_PREFIX])
+		replace_string(szMessage, iLen, ARG_ADMIN_PREFIX, g_ePlayerData[id][PDATA_PREFIX])
 	}
 	else
 	{
-		replace_all(szMessage, iLen, ARG_ADMIN_PREFIX, "")
+		replace_string(szMessage, iLen, ARG_ADMIN_PREFIX, "")
 	}
 	#endif
 
 	#if defined ARG_DEAD_PREFIX
-	replace_all(szMessage, iLen, ARG_DEAD_PREFIX, g_eSettings[iAlive ? ALIVE_PREFIX : iTeam == CS_TEAM_SPECTATOR ? SPEC_PREFIX : DEAD_PREFIX])
+	replace_string(szMessage, iLen, ARG_DEAD_PREFIX, g_eSettings[iAlive ? ALIVE_PREFIX : iTeam == CS_TEAM_SPECTATOR ? SPEC_PREFIX : DEAD_PREFIX])
 	#endif
 
 	#if defined ARG_TEAM
-	replace_all(szMessage, iLen, ARG_TEAM, g_eSettings[iTeam == CS_TEAM_CT ? TEAM_PREFIX_CT : iTeam == CS_TEAM_T ? TEAM_PREFIX_T : TEAM_PREFIX_SPEC])
+	replace_string(szMessage, iLen, ARG_TEAM, g_eSettings[iTeam == CS_TEAM_CT ? TEAM_PREFIX_CT : iTeam == CS_TEAM_T ? TEAM_PREFIX_T : TEAM_PREFIX_SPEC])
 	#endif
 
 	#if defined ARG_NAME
-	replace_all(szMessage, iLen, ARG_NAME, g_ePlayerData[id][PDATA_NAME])
+	replace_string(szMessage, iLen, ARG_NAME, g_ePlayerData[id][PDATA_NAME])
 	#endif
 
 	#if defined ARG_CUSTOM_NAME
-	replace_all(szMessage, iLen, ARG_CUSTOM_NAME, g_ePlayerData[id][g_ePlayerData[id][PDATA_CUSTOM_NAME_ENABLED] ? PDATA_CUSTOM_NAME : PDATA_NAME])
+	replace_string(szMessage, iLen, ARG_CUSTOM_NAME, g_ePlayerData[id][g_ePlayerData[id][PDATA_CUSTOM_NAME_ENABLED] ? PDATA_CUSTOM_NAME : PDATA_NAME])
 	#endif
 
 	#if defined ARG_IP
-	replace_all(szMessage, iLen, ARG_IP, g_ePlayerData[id][PDATA_IP])
+	replace_string(szMessage, iLen, ARG_IP, g_ePlayerData[id][PDATA_IP])
 	#endif
 
 	#if defined ARG_STEAM
-	replace_all(szMessage, iLen, ARG_STEAM, g_ePlayerData[id][PDATA_STEAM])
+	replace_string(szMessage, iLen, ARG_STEAM, g_ePlayerData[id][PDATA_STEAM])
 	#endif
 
 	#if defined ARG_USERID
-	replace_all(szMessage, iLen, ARG_USERID, g_ePlayerData[id][PDATA_USERID])
+	replace_string(szMessage, iLen, ARG_USERID, g_ePlayerData[id][PDATA_USERID])
 	#endif
 
 	#if defined ARG_CHAT_COLOR
 	if(g_ePlayerData[id][PDATA_CHAT_COLOR_ENABLED])
 	{
-		replace_all(szMessage, iLen, ARG_CHAT_COLOR, g_ePlayerData[id][PDATA_CHAT_COLOR])
+		replace_string(szMessage, iLen, ARG_CHAT_COLOR, g_ePlayerData[id][PDATA_CHAT_COLOR])
 	}
 	else
 	{
-		replace_all(szMessage, iLen, ARG_CHAT_COLOR, "")
+		replace_string(szMessage, iLen, ARG_CHAT_COLOR, "")
 	}
 	#endif
 
@@ -906,7 +987,7 @@ apply_replacements(const szFormat[], id, iAlive, CsTeams:iTeam, const szArgs[], 
 	if(has_argument(szMessage, ARG_TIME))
 	{
 		get_time(g_eSettings[FORMAT_TIME], szPlaceHolder, charsmax(szPlaceHolder))
-		replace_all(szMessage, iLen, ARG_TIME, szPlaceHolder)
+		replace_string(szMessage, iLen, ARG_TIME, szPlaceHolder)
 	}
 	#endif
 
@@ -914,7 +995,7 @@ apply_replacements(const szFormat[], id, iAlive, CsTeams:iTeam, const szArgs[], 
 	if(g_bRankSystem && has_argument(szMessage, ARG_CURRENT_XP))
 	{
 		num_to_str(crxranks_get_user_xp(id), szPlaceHolder, charsmax(szPlaceHolder))
-		replace_all(szMessage, iLen, ARG_CURRENT_XP, szPlaceHolder)
+		replace_string(szMessage, iLen, ARG_CURRENT_XP, szPlaceHolder)
 	}
 	#endif
 
@@ -922,7 +1003,7 @@ apply_replacements(const szFormat[], id, iAlive, CsTeams:iTeam, const szArgs[], 
 	if(g_bRankSystem && has_argument(szMessage, ARG_NEXT_XP))
 	{
 		num_to_str(crxranks_get_user_next_xp(id), szPlaceHolder, charsmax(szPlaceHolder))
-		replace_all(szMessage, iLen, ARG_NEXT_XP, szPlaceHolder)
+		replace_string(szMessage, iLen, ARG_NEXT_XP, szPlaceHolder)
 	}
 	#endif
 
@@ -930,7 +1011,7 @@ apply_replacements(const szFormat[], id, iAlive, CsTeams:iTeam, const szArgs[], 
 	if(g_bRankSystem && has_argument(szMessage, ARG_LEVEL))
 	{
 		num_to_str(crxranks_get_user_level(id), szPlaceHolder, charsmax(szPlaceHolder))
-		replace_all(szMessage, iLen, ARG_LEVEL, szPlaceHolder)
+		replace_string(szMessage, iLen, ARG_LEVEL, szPlaceHolder)
 	}
 	#endif
 
@@ -938,7 +1019,7 @@ apply_replacements(const szFormat[], id, iAlive, CsTeams:iTeam, const szArgs[], 
 	if(g_bRankSystem && has_argument(szMessage, ARG_NEXT_LEVEL))
 	{
 		num_to_str(crxranks_get_user_next_level(id), szPlaceHolder, charsmax(szPlaceHolder))
-		replace_all(szMessage, iLen, ARG_NEXT_LEVEL, szPlaceHolder)
+		replace_string(szMessage, iLen, ARG_NEXT_LEVEL, szPlaceHolder)
 	}
 	#endif
 
@@ -946,7 +1027,7 @@ apply_replacements(const szFormat[], id, iAlive, CsTeams:iTeam, const szArgs[], 
 	if(g_bRankSystem && has_argument(szMessage, ARG_RANK))
 	{
 		crxranks_get_user_rank(id, szPlaceHolder, charsmax(szPlaceHolder))
-		replace_all(szMessage, iLen, ARG_RANK, szPlaceHolder)
+		replace_string(szMessage, iLen, ARG_RANK, szPlaceHolder)
 	}
 	#endif
 
@@ -954,7 +1035,7 @@ apply_replacements(const szFormat[], id, iAlive, CsTeams:iTeam, const szArgs[], 
 	if(g_bRankSystem && has_argument(szMessage, ARG_NEXT_RANK))
 	{
 		crxranks_get_user_next_rank(id, szPlaceHolder, charsmax(szPlaceHolder))
-		replace_all(szMessage, iLen, ARG_NEXT_RANK, szPlaceHolder)
+		replace_string(szMessage, iLen, ARG_NEXT_RANK, szPlaceHolder)
 	}
 	#endif
 
@@ -962,7 +1043,7 @@ apply_replacements(const szFormat[], id, iAlive, CsTeams:iTeam, const szArgs[], 
 	if(has_argument(szMessage, ARG_HEALTH))
 	{
 		num_to_str(iAlive ? get_user_health(id) : 0, szPlaceHolder, charsmax(szPlaceHolder))
-		replace_all(szMessage, iLen, ARG_HEALTH, szPlaceHolder)
+		replace_string(szMessage, iLen, ARG_HEALTH, szPlaceHolder)
 	}
 	#endif
 
@@ -970,7 +1051,7 @@ apply_replacements(const szFormat[], id, iAlive, CsTeams:iTeam, const szArgs[], 
 	if(has_argument(szMessage, ARG_ARMOR))
 	{
 		num_to_str(iAlive ? get_user_armor(id) : 0, szPlaceHolder, charsmax(szPlaceHolder))
-		replace_all(szMessage, iLen, ARG_ARMOR, szPlaceHolder)
+		replace_string(szMessage, iLen, ARG_ARMOR, szPlaceHolder)
 	}
 	#endif
 
@@ -978,7 +1059,7 @@ apply_replacements(const szFormat[], id, iAlive, CsTeams:iTeam, const szArgs[], 
 	if(has_argument(szMessage, ARG_FRAGS))
 	{
 		num_to_str(get_user_frags(id), szPlaceHolder, charsmax(szPlaceHolder))
-		replace_all(szMessage, iLen, ARG_FRAGS, szPlaceHolder)
+		replace_string(szMessage, iLen, ARG_FRAGS, szPlaceHolder)
 	}
 	#endif
 
@@ -986,7 +1067,7 @@ apply_replacements(const szFormat[], id, iAlive, CsTeams:iTeam, const szArgs[], 
 	if(has_argument(szMessage, ARG_DEATHS))
 	{
 		num_to_str(cs_get_user_deaths(id), szPlaceHolder, charsmax(szPlaceHolder))
-		replace_all(szMessage, iLen, ARG_DEATHS, szPlaceHolder)
+		replace_string(szMessage, iLen, ARG_DEATHS, szPlaceHolder)
 	}
 	#endif
 
@@ -995,7 +1076,7 @@ apply_replacements(const szFormat[], id, iAlive, CsTeams:iTeam, const szArgs[], 
 	{
 		geoip_city(g_ePlayerData[id][PDATA_IP], szPlaceHolder, charsmax(szPlaceHolder))
 		check_validity(szPlaceHolder, charsmax(szPlaceHolder))
-		replace_all(szMessage, iLen, ARG_CITY, szPlaceHolder)
+		replace_string(szMessage, iLen, ARG_CITY, szPlaceHolder)
 	}
 	#endif
 
@@ -1009,7 +1090,7 @@ apply_replacements(const szFormat[], id, iAlive, CsTeams:iTeam, const szArgs[], 
 		#endif
 
 		check_validity(szPlaceHolder, charsmax(szPlaceHolder))
-		replace_all(szMessage, iLen, ARG_COUNTRY, szPlaceHolder)
+		replace_string(szMessage, iLen, ARG_COUNTRY, szPlaceHolder)
 	}
 	#endif
 
@@ -1025,7 +1106,7 @@ apply_replacements(const szFormat[], id, iAlive, CsTeams:iTeam, const szArgs[], 
 		#endif
 
 		check_validity(szCountryCode, charsmax(szCountryCode))
-		replace_all(szMessage, iLen, ARG_COUNTRY_CODE, szCountryCode)
+		replace_string(szMessage, iLen, ARG_COUNTRY_CODE, szCountryCode)
 	}
 	#endif
 
@@ -1034,7 +1115,7 @@ apply_replacements(const szFormat[], id, iAlive, CsTeams:iTeam, const szArgs[], 
 	{
 		geoip_continent_name(g_ePlayerData[id][PDATA_IP], szPlaceHolder, charsmax(szPlaceHolder))
 		check_validity(szPlaceHolder, charsmax(szPlaceHolder))
-		replace_all(szMessage, iLen, ARG_CONTINENT, szPlaceHolder)
+		replace_string(szMessage, iLen, ARG_CONTINENT, szPlaceHolder)
 	}
 	#endif
 
@@ -1044,14 +1125,14 @@ apply_replacements(const szFormat[], id, iAlive, CsTeams:iTeam, const szArgs[], 
 		new szContinentCode[3]
 		geoip_continent_code(g_ePlayerData[id][PDATA_IP], szContinentCode)
 		check_validity(szContinentCode, charsmax(szContinentCode))
-		replace_all(szMessage, iLen, ARG_CONTINENT_CODE, szContinentCode)
+		replace_string(szMessage, iLen, ARG_CONTINENT_CODE, szContinentCode)
 	}
 	#endif
 
-	replace_all(szMessage, iLen, "  ", " ")
+	replace_string(szMessage, iLen, "  ", " ")
 
 	#if defined ARG_MESSAGE
-	replace_all(szMessage, iLen, ARG_MESSAGE, szArgs)
+	replace_string(szMessage, iLen, ARG_MESSAGE, szArgs)
 	#endif
 
 	trim(szMessage)

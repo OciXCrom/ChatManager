@@ -7,6 +7,10 @@
 #include <amxmodx>
 #include <fakemeta>
 
+#if !defined replace_string
+	#define replace_string replace_all
+#endif
+
 #if !defined CC_DONT_OVERWRITE_183_PRINT
 	#define client_print_color CC_SendMatched
 	#define print_team_default CC_COLOR_TEAM
@@ -43,13 +47,17 @@
 	#define ChatPrint CC_SendMessage
 #endif
 
+#if !defined CC_PERCENT_REPLACE
+	#define CC_PERCENT_REPLACE "％"
+#endif
+
 #define CromChat CC_SendMessage
 
-const Float:CC_VERSION            = 3.0
+const Float:CC_VERSION            = 3.1
 const CC_MAX_ACT_PREFIX_SIZE      = 10
 const CC_MAX_PLAYERS              = 32
 const CC_MAX_PREFIX_SIZE          = 64
-const CC_MAX_MESSAGE_SIZE         = 188
+const CC_MAX_MESSAGE_SIZE         = 177
 new const CC_LIBRARY_NAME[]       = "cromchat"
 static const CC_FILTERING_FLAGS[] = "ch"
 
@@ -243,11 +251,11 @@ stock CC_SendMessage(id, const input[], any:...)
 	{
 		if(CC_IS_CSTRIKE)
 		{
-			replace_all(szMessage, charsmax(szMessage), CC_REPLACE_COLORS[i], CC_REPLACE_COLORS[i + 1])
+			replace_string(szMessage, charsmax(szMessage), CC_REPLACE_COLORS[i], CC_REPLACE_COLORS[i + 1])
 		}
 		else
 		{
-			replace_all(szMessage, charsmax(szMessage), CC_REPLACE_COLORS[i], "")
+			replace_string(szMessage, charsmax(szMessage), CC_REPLACE_COLORS[i], "")
 		}
 	}
 		
@@ -264,11 +272,11 @@ stock CC_SendMessage(id, const input[], any:...)
 			{
 				if(CC_IS_CSTRIKE)
 				{
-					replace_all(szMessage, charsmax(szMessage), CC_COLORS_LIST[i], CC_SYM_CHAT_DEF_TEAM)
+					replace_string(szMessage, charsmax(szMessage), CC_COLORS_LIST[i], CC_SYM_CHAT_DEF_TEAM)
 				}
 				else
 				{
-					replace_all(szMessage, charsmax(szMessage), CC_COLORS_LIST[i], "")
+					replace_string(szMessage, charsmax(szMessage), CC_COLORS_LIST[i], "")
 				}
 			}
 
@@ -713,8 +721,8 @@ stock CC_ShowActivityKey(const without[], const with[], const name[], any:...)
 /**
  * Removes the color codes from a message.
  *
- * @param message   The message to work with
- * @param len       Maximum buffer length
+ * @param message   The message to remove colors from
+ * @param len       Maximum message length
  * @param chat      If set to true, it will remove the chat color codes
  * @param menu      If set to true, it will remove the menu color codes
  *
@@ -728,7 +736,7 @@ stock CC_RemoveColors(message[], len, bool:chat = true, bool:menu = false)
 	{
 		for(i = 0; i < sizeof(CC_COLORS_LIST); i++)
 		{
-			replace_all(message, len, CC_COLORS_LIST[i], "")
+			replace_string(message, len, CC_COLORS_LIST[i], "")
 		}
 	}
 	
@@ -736,8 +744,43 @@ stock CC_RemoveColors(message[], len, bool:chat = true, bool:menu = false)
 	{
 		for(i = 0; i < sizeof(CC_MENU_COLORS); i++)
 		{
-			replace_all(message, len, CC_MENU_COLORS[i], "")
+			replace_string(message, len, CC_MENU_COLORS[i], "")
 		}
+	}
+}
+
+/**
+ * Removes exploits from the message.
+ *
+ * @note You can change the '%' replacement symbol by adding #define CC_PERCENT_REPLACE "symbol here" before #include <cromchat>
+ * @note It is strongly advised to use this function whenever you're sending messages based on hooking "say" or "say_team"
+ *
+ * @param message   The message to remove exploits from
+ * @param len       Maximum message length
+ * @param colors    If set to true, it will remove the ETX, EOT & SOH chat color codes;
+ *                  this prevents player from manually changing their chat color when they have the chance to
+ * @param percent   If set to true, it will replace the '%' symbol with '％'
+ *
+ * @noreturn
+ */
+stock CC_RemoveExploits(message[], len, bool:colors = true, bool:percent = true)
+{
+	static i
+
+	if(colors)
+	{
+		static const CC_COLOR_EXPLOITS[][] = { "", "", "" }
+
+		for(i = 0; i < sizeof(CC_COLOR_EXPLOITS); i++)
+		{
+			replace_string(message, len, CC_COLOR_EXPLOITS[i], "")
+		}
+	}
+
+	if(percent)
+	{
+		static const CC_PERCENT_FIND[] = "%"
+		replace_string(message, len, CC_PERCENT_FIND, CC_PERCENT_REPLACE)
 	}
 }
 
