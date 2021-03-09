@@ -53,7 +53,7 @@
 
 #define CromChat CC_SendMessage
 
-const Float:CC_VERSION            = 3.1
+const Float:CC_VERSION            = 3.2
 const CC_MAX_ACT_PREFIX_SIZE      = 10
 const CC_MAX_PLAYERS              = 32
 const CC_MAX_PREFIX_SIZE          = 64
@@ -77,11 +77,15 @@ static const CC_FILTERING_FLAGS[] = "ch"
 	#define CC_ACTIVITY_PREFIX_ADMIN "ADMIN"
 #endif
 
-const CC_COLOR_TEAM  = CC_MAX_PLAYERS + 1
-const CC_COLOR_GREY  = CC_MAX_PLAYERS + 2
-const CC_COLOR_WHITE = CC_MAX_PLAYERS + 2
-const CC_COLOR_BLUE  = CC_MAX_PLAYERS + 3
-const CC_COLOR_RED   = CC_MAX_PLAYERS + 4
+enum
+{
+	CC_COLOR_TEAM = CC_MAX_PLAYERS + 25,
+	CC_COLOR_GREY,
+	CC_COLOR_BLUE,
+	CC_COLOR_RED
+}
+
+const CC_COLOR_WHITE = CC_COLOR_GREY
 
 enum
 {
@@ -854,7 +858,7 @@ stock _CC_WriteMessage(id, const message[])
 
 			if(CC_IS_CSTRIKE)
 			{
-				new iCacheList[] = { CC_COLOR_WHITE, CC_COLOR_BLUE, CC_COLOR_RED }
+				new iCacheList[] = { CC_COLOR_GREY, CC_COLOR_BLUE, CC_COLOR_RED }
 				new szCacheList[][] = { "", "CT", "TERRORIST" }
 				new CC_MSG_TEAMINFO = get_user_msgid("TeamInfo")
 
