@@ -1,8 +1,17 @@
 #include <amxmodx>
 #include <amxmisc>
-#include <cromchat>
 #include <cstrike>
 #include <fakemeta>
+
+#tryinclude <cromchat>
+
+#if !defined _cromchat_included
+	#error "cromchat.inc" is missing in your "scripting/include" folder. Download it from: "https://amxx-bg.info/inc/"
+#endif
+
+#if !defined CC_RemoveExploits
+	#error Your "cromchat.inc" is outdated. Please replace it with the one attached in the archive.
+#endif
 
 new const PLUGIN_VERSION[] = "4.8"
 const Float:DELAY_ON_REGISTER = 1.0
