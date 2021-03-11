@@ -944,7 +944,7 @@ stock _CC_ActivityInit()
 
 	if(!CC_ACTIVITY_POINTER)
 	{
-		CC_ACTIVITY_POINTER = register_cvar(CC_ACTIVITY_CVAR, "2", FCVAR_PROTECTED)
+		CC_ACTIVITY_POINTER = register_cvar("amx_show_activity", "2", FCVAR_PROTECTED)
 	}
 }
 
