@@ -53,7 +53,7 @@
 
 #define CromChat CC_SendMessage
 
-const Float:CC_VERSION            = 3.2
+const Float:CC_VERSION            = 3.3
 const CC_MAX_ACT_PREFIX_SIZE      = 10
 const CC_MAX_PLAYERS              = 32
 const CC_MAX_PREFIX_SIZE          = 64
@@ -106,7 +106,7 @@ enum
 #define CC_SYM_CHAT_DEF_TEAM        "^x03"
 #define CC_SYM_CHAT_DEF_GREEN       "^x04"
 
-static bool:CC_FIRST_TIME_ACTIVITY = true, bool:CC_IS_CSTRIKE, bool:CC_COLOR_FORCE
+static bool:CC_FIRST_TIME_ACTIVITY = true, bool:CC_IS_CSCZ, bool:CC_COLOR_FORCE
 static CC_ACTIVITY_POINTER, CC_COLOR_PLAYER_INDEX
 
 new CC_PREFIX[CC_MAX_PREFIX_SIZE]
@@ -241,7 +241,7 @@ stock CC_SendMessage(id, const input[], any:...)
 	}
 	else if(CC_PREFIX[0])
 	{
-		if(CC_IS_CSTRIKE)
+		if(CC_IS_CSCZ)
 		{
 			format(szMessage, charsmax(szMessage), "%s%s %s%s", CC_SYM_CHAT_DEF_NORMAL, CC_PREFIX, CC_SYM_CHAT_DEF_NORMAL, szMessage)
 		}
@@ -253,7 +253,7 @@ stock CC_SendMessage(id, const input[], any:...)
 	
 	for(i = 0; i < sizeof(CC_REPLACE_COLORS) - 1; i += 2)
 	{
-		if(CC_IS_CSTRIKE)
+		if(CC_IS_CSCZ)
 		{
 			replace_string(szMessage, charsmax(szMessage), CC_REPLACE_COLORS[i], CC_REPLACE_COLORS[i + 1])
 		}
@@ -274,7 +274,7 @@ stock CC_SendMessage(id, const input[], any:...)
 
 			for(i = 0; i < 3; i++)
 			{
-				if(CC_IS_CSTRIKE)
+				if(CC_IS_CSCZ)
 				{
 					replace_string(szMessage, charsmax(szMessage), CC_COLORS_LIST[i], CC_SYM_CHAT_DEF_TEAM)
 				}
@@ -803,7 +803,7 @@ stock CC_SetPrefix(const prefix[])
 	_CC_ModInit()
 	copy(CC_PREFIX, charsmax(CC_PREFIX), prefix)
 
-	if(!CC_IS_CSTRIKE)
+	if(!CC_IS_CSCZ)
 	{
 		CC_RemoveColors(CC_PREFIX, charsmax(CC_PREFIX))
 	}
@@ -856,7 +856,7 @@ stock _CC_WriteMessage(id, const message[])
 		{
 			register_library(CC_LIBRARY_NAME)
 
-			if(CC_IS_CSTRIKE)
+			if(CC_IS_CSCZ)
 			{
 				new iCacheList[] = { CC_COLOR_GREY, CC_COLOR_BLUE, CC_COLOR_RED }
 				new szCacheList[][] = { "", "CT", "TERRORIST" }
@@ -893,7 +893,7 @@ stock _CC_WriteMessage(id, const message[])
 
 	message_begin(MSG_ONE, CC_MSG_SAYTEXT, _, id)
 
-	if(CC_IS_CSTRIKE)
+	if(CC_IS_CSCZ)
 	{
 		write_byte(CC_COLOR_PLAYER_INDEX && CC_COLOR_PLAYER_INDEX != CC_COLOR_TEAM ? CC_COLOR_PLAYER_INDEX : id)
 	}
@@ -921,13 +921,14 @@ stock _CC_ModInit()
 		CC_MOD_INIT = true
 
 		static const CC_CSTRIKE_MODNAME[] = "cstrike"
+		static const CC_CZERO_MODNAME[] = "czero"
 
 		new szModName[sizeof(CC_CSTRIKE_MODNAME)]
 		get_modname(szModName, charsmax(szModName))
 
-		if(equal(szModName, CC_CSTRIKE_MODNAME))
+		if(equal(szModName, CC_CSTRIKE_MODNAME) || equal(szModName, CC_CZERO_MODNAME))
 		{
-			CC_IS_CSTRIKE = true
+			CC_IS_CSCZ = true
 		}
 	}
 }
