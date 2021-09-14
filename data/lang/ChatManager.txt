@@ -77,3 +77,11 @@ CM_MENU_CHAT_COLOR = Chat Színe
 CM_MENU_CUSTOM_NAME = Egyedi Név
 CM_MENU_ENABLED = \y[BE]
 CM_MENU_DISABLED = \r[KI]
+
+[pl] -- Pawel
+CM_MENU_TITLE = \y[\rChat Manager\y]\w Ustawienia
+CM_MENU_PREFIX = Prefix
+CM_MENU_CHAT_COLOR = Kolor czatu
+CM_MENU_CUSTOM_NAME = Wlasna nazwa
+CM_MENU_ENABLED = \y[ON]
+CM_MENU_DISABLED = \r[OFF]
